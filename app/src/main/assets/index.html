@@ -119,10 +119,12 @@ h3 {
                 New Order
             </button>
 
+            
             <button class="menu-button"
-                onclick="showMessage('Menu Management')">
+                onclick="openMenuManagement()">
                 Menu Management
             </button>
+
 
             <button class="menu-button"
                 onclick="openHeldOrders()">
@@ -238,8 +240,204 @@ h3 {
         </button>
     </div>
 </div>
+ 
+<div id="menuPage" class="hidden">
+    <div class="card">
+        <h3>Menu Management</h3>
+
+        <label>Item Name</label>
+        <input type="text" id="menuName"
+               placeholder="Enter food or drink name">
+
+        <label>Category</label>
+        <select id="menuCategory">
+            <option value="Food">Food</option>
+            <option value="Drink">Drink</option>
+        </select>
+
+        <label>Price (Rp)</label>
+        <input type="number" id="menuPrice"
+               placeholder="Enter selling price" min="0">
+
+        <button onclick="saveMenuItem()">
+            Save Menu Item
+        </button>
+
+        <hr>
+
+        <h3>Menu List</h3>
+        <div id="menuList">
+            No menu items yet.
+        </div>
+
+        <button onclick="closeMenuManagement()"
+                style="background:#64748b">
+            Back to Dashboard
+        </button>
+    </div>
+</div>
+   
 
 <script>
+ 
+function openMenuManagement() {
+    document.getElementById("dashboard").classList.add("hidden");
+    document.getElementById("menuPage").classList.remove("hidden");
+    displayMenuItems();
+}
+
+function closeMenuManagement() {
+    document.getElementById("menuPage").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+}
+
+function saveMenuItem() {
+    const name = document.getElementById("menuName").value.trim();
+    const category = document.getElementById("menuCategory").value;
+    const price = Number(document.getElementById("menuPrice").value);
+
+    if (!name || !Number.isFinite(price) || price <= 0) {
+        alert("Please enter a valid item name and price.");
+        return;
+    }
+
+    let menus = JSON.parse(
+        localStorage.getItem("samuhMenus") || "[]"
+    );
+
+    menus.push({
+        id: Date.now().toString(),
+        name: name,
+        category: category,
+        price: price
+    });
+
+    localStorage.setItem("samuhMenus", JSON.stringify(menus));
+
+    document.getElementById("menuName").value = "";
+    document.getElementById("menuPrice").value = "";
+
+    displayMenuItems();
+
+    alert("Menu item saved successfully.");
+}
+
+
+function displayMenuItems() {
+    const menus = JSON.parse(
+        localStorage.getItem("samuhMenus") || "[]"
+    );
+
+    const container = document.getElementById("menuList");
+    container.innerHTML = "";
+
+    if (menus.length === 0) {
+        container.textContent = "No menu items yet.";
+        return;
+    }
+
+    menus.forEach((item, index) => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const title = document.createElement("h3");
+        title.textContent = item.name;
+
+        const details = document.createElement("p");
+        details.textContent =
+            item.category + " - Rp" +
+            item.price.toLocaleString("id-ID");
+
+        const editButton = document.createElement("button");
+        editButton.textContent = "Edit";
+        editButton.onclick = () => editMenuItem(index);
+
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.style.background = "#dc2626";
+        deleteButton.onclick = () => deleteMenuItem(index);
+
+        card.append(title, details, editButton, deleteButton);
+        container.appendChild(card);
+    });
+}
+
+function editMenuItem(index) {
+    let menus = JSON.parse(
+        localStorage.getItem("samuhMenus") || "[]"
+    );
+
+    const item = menus[index];
+
+    if (!item) return;
+
+    const newName = prompt("Enter new item name:", item.name);
+
+    if (newName === null) return;
+
+    const newPrice = prompt("Enter new price:", item.price);
+
+    if (newPrice === null) return;
+
+    const price = Number(newPrice);
+
+    if (!newName.trim() || !Number.isFinite(price) || price <= 0) {
+        alert("Invalid item name or price.");
+        return;
+    }
+
+    const newCategory = prompt(
+        "Enter category: Food or Drink",
+        item.category
+    );
+
+    if (newCategory === null) return;
+
+    if (!["Food", "Drink"].includes(newCategory.trim())) {
+        alert("Category must be Food or Drink.");
+        return;
+    }
+
+    menus[index] = {
+        ...item,
+        name: newName.trim(),
+        price: price,
+        category: newCategory.trim()
+    };
+
+    localStorage.setItem("samuhMenus", JSON.stringify(menus));
+
+    displayMenuItems();
+
+    alert("Menu item updated successfully.");
+}
+
+ 
+function deleteMenuItem(index) {
+    let menus = JSON.parse(
+        localStorage.getItem("samuhMenus") || "[]"
+    );
+
+    const item = menus[index];
+
+    if (!item) return;
+
+    const confirmDelete = confirm(
+        "Are you sure you want to delete " + item.name + "?"
+    );
+
+    if (!confirmDelete) return;
+
+    menus.splice(index, 1);
+
+    localStorage.setItem("samuhMenus", JSON.stringify(menus));
+
+    displayMenuItems();
+
+    alert("Menu item deleted successfully.");
+}
+
+   
 const ownerPIN = "1234";
 const cashierPIN = "1111";
 
