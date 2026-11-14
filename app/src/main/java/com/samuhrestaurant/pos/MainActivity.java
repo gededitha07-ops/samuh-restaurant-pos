@@ -5,6 +5,10 @@ import android.os.Bundle;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
 import android.webkit.WebViewClient;
+import android.webkit.JavascriptInterface;
+import android.print.PrintManager;
+import android.content.Context;
+import android.print.PrintDocumentAdapter;
 
 public class MainActivity extends Activity {
 
@@ -21,6 +25,32 @@ public class MainActivity extends Activity {
         settings.setDomStorageEnabled(true);
 
         webView.setWebViewClient(new WebViewClient());
+
+        webView.addJavascriptInterface(
+            new Object() {
+                @JavascriptInterface
+                public void printReport() {
+                    runOnUiThread(() -> {
+                        PrintManager printManager =
+                            (PrintManager) getSystemService(
+                                Context.PRINT_SERVICE
+                            );
+
+                        PrintDocumentAdapter adapter =
+                            webView.createPrintDocumentAdapter(
+                                "Samuh-Restaurant-Report"
+                            );
+
+                        printManager.print(
+                            "Samuh-Restaurant-Report",
+                            adapter,
+                            null
+                        );
+                    });
+                }
+            },
+            "Android"
+        );
 
         setContentView(webView);
 
