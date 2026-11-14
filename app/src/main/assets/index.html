@@ -186,9 +186,15 @@ h3 {
 
          <h3 id="orderTotal">Total: Rp0</h3>
 
-        <button onclick="saveOrder()">
-            Save Order
-        </button>
+        
+         <button onclick="saveOrder()">
+                 Hold Order
+         </button>
+
+         <button onclick="openPayment()">
+                 Proceed to Payment
+         </button>
+
 
         <button onclick="closeOrder()"
                 style="background:#64748b">
@@ -198,6 +204,40 @@ h3 {
 
 </div>
     
+
+<div id="paymentPage" class="hidden">
+    <div class="card">
+        <h3>Payment</h3>
+
+        <p id="paymentTotal">Grand Total: Rp0</p>
+
+        <label>Payment Method</label>
+        <label>Payment Method</label>
+        <select id="paymentMethod"
+                onchange="updatePaymentMethod()">
+            <option value="Cash">Cash</option>
+            <option value="Bank Payout">Bank Payout</option>
+            <option value="Sign">Sign - Charge to Room</option>
+        </select>
+
+        <div id="cashPayment">
+            <label>Amount Received (Rp)</label>
+            <input type="number" id="amountReceived"
+       placeholder="Enter amount received"
+       oninput="calculateChange()">
+            <p id="changeAmount">Change: Rp0</p>
+        </div>
+
+        <button onclick="completePayment()">
+            Complete Payment
+        </button>
+
+        <button onclick="backToOrder()"
+                style="background:#64748b">
+            Back to Order
+        </button>
+    </div>
+</div>
 
 <script>
 const ownerPIN = "1234";
@@ -231,6 +271,10 @@ function showMessage(name) {
 }
  
 function openOrder() {
+    currentOrderId = null;
+    currentOrderItems = [];
+    displayOrderItems();
+
     document.getElementById("dashboard").classList.add("hidden");
     document.getElementById("orderPage").classList.remove("hidden");
 }
@@ -308,6 +352,126 @@ function saveOrder() {
 
     closeOrder();
 }
+
+function openPayment() {
+    const room = document.getElementById("roomNumber").value.trim();
+    const guest = document.getElementById("guestName").value.trim();
+    const staff = document.getElementById("orderStaffName").value.trim();
+
+    if (!room || !guest || !staff) {
+        alert("Please complete all order information.");
+        return;
+    }
+
+    if (currentOrderItems.length === 0) {
+        alert("Please add at least one order item.");
+        return;
+    }
+
+    const total = currentOrderItems.reduce(
+        (sum, item) => sum + item.total, 0
+    );
+
+    document.getElementById("paymentTotal").textContent =
+        "Grand Total: Rp" + total.toLocaleString("id-ID");
+
+    document.getElementById("orderPage").classList.add("hidden");
+    document.getElementById("paymentPage").classList.remove("hidden");
+}
+
+function updatePaymentMethod() {
+    const method = document.getElementById("paymentMethod").value;
+    const cashSection = document.getElementById("cashPayment");
+
+    if (method === "Cash") {
+        cashSection.classList.remove("hidden");
+    } else {
+        cashSection.classList.add("hidden");
+    }
+}
+
+function calculateChange() {
+    const received = Number(
+        document.getElementById("amountReceived").value
+    );
+
+    const totalText =
+        document.getElementById("paymentTotal").textContent;
+
+    const total = Number(
+        totalText.replace(/\D/g, "")
+    );
+
+    const change = Math.max(0, received - total);
+
+    document.getElementById("changeAmount").textContent =
+        "Change: Rp" + change.toLocaleString("id-ID");
+}
+
+function completePayment() {
+    const method = document.getElementById("paymentMethod").value;
+
+    const total = currentOrderItems.reduce(
+        (sum, item) => sum + item.total, 0
+    );
+
+    const received = method === "Cash"
+        ? Number(document.getElementById("amountReceived").value)
+        : total;
+
+    if (method === "Cash" && received < total) {
+        alert("Amount received is not enough.");
+        return;
+    }
+
+    const orders = JSON.parse(
+        localStorage.getItem("samuhOrders") || "[]"
+    );
+
+    const orderData = {
+        id: currentOrderId || Date.now().toString(),
+        roomNumber: document.getElementById("roomNumber").value.trim(),
+        guestName: document.getElementById("guestName").value.trim(),
+        staffName: document.getElementById("orderStaffName").value.trim(),
+        items: [...currentOrderItems],
+        subtotal: total,
+        paymentMethod: method,
+        amountReceived: received,
+        change: method === "Cash" ? received - total : 0,
+        status: method === "Sign" ? "Unpaid" : "Paid",
+        date: new Date().toISOString()
+    };
+
+    const index = orders.findIndex(
+        order => order.id === orderData.id
+    );
+
+    if (index !== -1) {
+        orders[index] = orderData;
+    } else {
+        orders.push(orderData);
+    }
+
+    localStorage.setItem("samuhOrders", JSON.stringify(orders));
+
+    alert(method === "Sign"
+        ? "Order saved as unpaid room charge."
+        : "Payment completed successfully.");
+
+    currentOrderItems = [];
+    currentOrderId = null;
+
+    displayOrderItems();
+
+    document.getElementById("paymentPage").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+}
+
+function backToOrder() {
+    document.getElementById("paymentPage").classList.add("hidden");
+    document.getElementById("orderPage").classList.remove("hidden");
+}
+
 
  
 let currentOrderItems = [];
@@ -475,7 +639,8 @@ function openHeldOrder(index) {
         container.appendChild(card);
     });
 }
-
+    
+updatePaymentMethod();
 </script>
 
 </body>
