@@ -125,8 +125,9 @@ h3 {
             </button>
 
             <button class="menu-button"
-                onclick="showMessage('Held Orders')">
+                onclick="openHeldOrders()">
                 Held Orders
+            </button>
             </button>
 
             <button class="menu-button"
@@ -240,6 +241,7 @@ function closeOrder() {
 }
 
 
+
 function saveOrder() {
     const room = document.getElementById("roomNumber").value.trim();
     const guest = document.getElementById("guestName").value.trim();
@@ -263,24 +265,41 @@ function saveOrder() {
         localStorage.getItem("samuhOrders") || "[]"
     );
 
-    orders.push({
-        roomNumber: room,
-        guestName: guest,
-        staffName: staff,
-        items: [...currentOrderItems],
-        subtotal: total,
-        date: new Date().toISOString(),
-        status: "Held"
-    });
+    if (currentOrderId !== null) {
+        const index = orders.findIndex(
+            order => order.id === currentOrderId
+        );
 
-    localStorage.setItem(
-        "samuhOrders",
-        JSON.stringify(orders)
-    );
+        if (index !== -1) {
+            orders[index] = {
+                ...orders[index],
+                roomNumber: room,
+                guestName: guest,
+                staffName: staff,
+                items: [...currentOrderItems],
+                subtotal: total,
+                status: "Held"
+            };
+        }
+    } else {
+        orders.push({
+            id: Date.now().toString(),
+            roomNumber: room,
+            guestName: guest,
+            staffName: staff,
+            items: [...currentOrderItems],
+            subtotal: total,
+            date: new Date().toISOString(),
+            status: "Held"
+        });
+    }
+
+    localStorage.setItem("samuhOrders", JSON.stringify(orders));
 
     alert("Order saved successfully.");
 
     currentOrderItems = [];
+    currentOrderId = null;
     displayOrderItems();
 
     document.getElementById("roomNumber").value = "";
@@ -292,6 +311,7 @@ function saveOrder() {
 
  
 let currentOrderItems = [];
+let currentOrderId = null;
 
 function addOrderItem() {
     const name = document.getElementById("itemName").value.trim();
@@ -339,7 +359,123 @@ function displayOrderItems() {
     document.getElementById("orderTotal").textContent =
         "Total: Rp" + total.toLocaleString("id-ID");
 }
+    
   
+<div id="heldOrdersPage" class="hidden">
+    <div class="card">
+        <h3>Held Orders</h3>
+
+        <div id="heldOrdersList">
+            No held orders yet.
+        </div>
+
+        <button onclick="closeHeldOrders()"
+                style="background:#64748b">
+            Back to Dashboard
+        </button>
+    </div>
+</div>
+
+function openHeldOrders() {
+    document.getElementById("dashboard").classList.add("hidden");
+    document.getElementById("heldOrdersPage").classList.remove("hidden");
+
+    displayHeldOrders();
+}
+
+function closeHeldOrders() {
+    document.getElementById("heldOrdersPage").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+}
+
+
+function displayHeldOrders() {
+    const orders = JSON.parse(
+        localStorage.getItem("samuhOrders") || "[]"
+    );
+
+    const container = document.getElementById("heldOrdersList");
+    container.innerHTML = "";
+
+    const held = orders
+        .map((order, index) => ({order, index}))
+        .filter(item => item.order.status === "Held");
+
+    if (held.length === 0) {
+        container.textContent = "No held orders yet.";
+        return;
+    }
+
+    held.forEach(({order, index}) => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const title = document.createElement("h3");
+        title.textContent = "Room " + order.roomNumber;
+
+        const details = document.createElement("p");
+        details.textContent =
+            "Guest: " + order.guestName +
+            " | Staff: " + order.staffName;
+
+        const total = document.createElement("p");
+        total.textContent =
+            "Total: Rp" + order.subtotal.toLocaleString("id-ID");
+
+        const button = document.createElement("button");
+        button.textContent = "Open Order";
+        button.onclick = () => openHeldOrder(index);
+
+        card.append(title, details, total, button);
+        container.appendChild(card);
+    });
+}
+
+function openHeldOrder(index) {
+    let orders = JSON.parse(
+        localStorage.getItem("samuhOrders") || "[]"
+    );
+
+    const order = orders[index];
+
+    if (!order) return;
+    currentOrderId = order.id;
+
+    document.getElementById("roomNumber").value = order.roomNumber;
+    document.getElementById("guestName").value = order.guestName;
+    document.getElementById("orderStaffName").value = order.staffName;
+
+    currentOrderItems = order.items || [];
+    displayOrderItems();
+
+    document.getElementById("heldOrdersPage").classList.add("hidden");
+    document.getElementById("orderPage").classList.remove("hidden");
+}
+
+
+    orders.forEach((order, index) => {
+        if (order.status !== "Held") return;
+
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const title = document.createElement("h3");
+        title.textContent = "Room " + order.roomNumber;
+
+        const details = document.createElement("p");
+        details.textContent =
+            "Guest: " + order.guestName +
+            " | Staff: " + order.staffName;
+
+        const total = document.createElement("p");
+        total.textContent =
+            "Total: Rp" + order.subtotal.toLocaleString("id-ID");
+
+        card.append(title, details, total);
+        container.appendChild(card);
+    });
+}
+
 </script>
 
 </body>
