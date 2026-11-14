@@ -302,6 +302,20 @@ h3 {
 
         <hr>
 
+<h3>Select Report Period</h3>
+
+<label>Start Date</label>
+<input type="date" id="reportStartDate">
+
+<label>End Date</label>
+<input type="date" id="reportEndDate">
+
+<button onclick="displayReports()">
+    Generate Report
+</button>
+
+<hr>
+
         <h3>Payment Summary</h3>
 
         <p id="totalCash">Cash: Rp0</p>
@@ -319,6 +333,11 @@ h3 {
         <div id="transactionHistory">
             No transactions yet.
         </div>
+        
+        <button onclick="printReport()">
+            Print Report
+        </button>
+
 
         <button onclick="closeReports()"
                 style="background:#64748b">
@@ -1069,42 +1088,86 @@ function openHeldOrder(index) {
     document.getElementById("orderPage").classList.remove("hidden");
 }
 
+
 function openReports() {
     document.getElementById("dashboard").classList.add("hidden");
     document.getElementById("reportsPage").classList.remove("hidden");
 
+    const today = new Date();
+    const localToday =
+        today.getFullYear() + "-" +
+        String(today.getMonth() + 1).padStart(2, "0") + "-" +
+        String(today.getDate()).padStart(2, "0");
+
+    document.getElementById("reportStartDate").value = localToday;
+    document.getElementById("reportEndDate").value = localToday;
+
     displayReports();
 }
+
 
 function closeReports() {
     document.getElementById("reportsPage").classList.add("hidden");
     document.getElementById("dashboard").classList.remove("hidden");
 }
 
+
 function displayReports() {
     const orders = JSON.parse(
         localStorage.getItem("samuhOrders") || "[]"
     );
+
+    const startDate =
+        document.getElementById("reportStartDate").value;
+
+    const endDate =
+        document.getElementById("reportEndDate").value;
+
+    if (!startDate || !endDate) {
+        alert("Please select start date and end date.");
+        return;
+    }
+
+    if (startDate > endDate) {
+        alert("Start date cannot be later than end date.");
+        return;
+    }
 
     let totalCash = 0;
     let totalBank = 0;
     let totalSign = 0;
     let grandTotal = 0;
 
-    const history = document.getElementById("transactionHistory");
+    const history =
+        document.getElementById("transactionHistory");
+
     history.innerHTML = "";
 
-    document.getElementById("reportDate").textContent =
-        "Report Date: " +
-        new Date().toLocaleDateString("en-GB");
+    const transactions = orders.filter(order => {
+        if (
+            order.status !== "Paid" &&
+            order.status !== "Unpaid"
+        ) {
+            return false;
+        }
 
-    const transactions = orders.filter(
-        order => order.status === "Paid" ||
-                 order.status === "Unpaid"
-    );
+        const date = new Date(order.date);
+
+        const localDate =
+            date.getFullYear() + "-" +
+            String(date.getMonth() + 1).padStart(2, "0") + "-" +
+            String(date.getDate()).padStart(2, "0");
+
+        return localDate >= startDate &&
+               localDate <= endDate;
+    });
+
+    document.getElementById("reportDate").textContent =
+        "Report Period: " + startDate + " to " + endDate;
 
     if (transactions.length === 0) {
-        history.textContent = "No transactions yet.";
+        history.textContent =
+            "No transactions found for this period.";
     }
 
     transactions.forEach(order => {
@@ -1161,6 +1224,7 @@ function displayReports() {
     document.getElementById("grandTotal").textContent =
         "Grand Total: Rp" + grandTotal.toLocaleString("id-ID");
 }
+
 
 
     
