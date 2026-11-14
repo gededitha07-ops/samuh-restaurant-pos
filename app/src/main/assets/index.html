@@ -1,0 +1,180 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Samuh Restaurant POS</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+header {
+    background: #123b35;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+header h2 {
+    margin: 0;
+}
+
+.container {
+    padding: 16px;
+}
+
+.card {
+    background: white;
+    padding: 18px;
+    margin-bottom: 15px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px #00000012;
+}
+
+button {
+    background: #176b57;
+    color: white;
+    border: none;
+    padding: 13px;
+    border-radius: 8px;
+    width: 100%;
+    font-size: 15px;
+    margin-top: 10px;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin-top: 8px;
+    margin-bottom: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 15px;
+}
+
+.menu-button {
+    background: #e2eee9;
+    color: #123b35;
+    font-weight: bold;
+}
+
+.hidden {
+    display: none;
+}
+
+h3 {
+    margin-top: 0;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h2>SAMUH RESTAURANT</h2>
+    <p>Point of Sale System</p>
+</header>
+
+<div class="container">
+
+    <div class="card" id="login">
+        <h3>Staff Login</h3>
+
+        <label>Select User</label>
+        <select id="user">
+            <option value="Owner">Owner</option>
+            <option value="Cashier">Cashier</option>
+        </select>
+
+        <label>Enter PIN</label>
+        <input type="password" id="pin"
+               inputmode="numeric" placeholder="Enter your PIN">
+
+        <button onclick="login()">Login</button>
+    </div>
+
+    <div id="dashboard" class="hidden">
+
+        <div class="card">
+            <h3>Welcome to Samuh Restaurant</h3>
+            <p id="staffName"></p>
+            <button onclick="logout()">Logout</button>
+        </div>
+
+        <div class="card">
+            <h3>Main Menu</h3>
+
+            <button class="menu-button"
+                onclick="showMessage('New Order')">
+                New Order
+            </button>
+
+            <button class="menu-button"
+                onclick="showMessage('Menu Management')">
+                Menu Management
+            </button>
+
+            <button class="menu-button"
+                onclick="showMessage('Held Orders')">
+                Held Orders
+            </button>
+
+            <button class="menu-button"
+                onclick="showMessage('Reports')">
+                Reports
+            </button>
+
+            <button class="menu-button"
+                onclick="showMessage('Settings')">
+                Settings
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+const ownerPIN = "1234";
+const cashierPIN = "1111";
+
+function login() {
+    const user = document.getElementById("user").value;
+    const pin = document.getElementById("pin").value;
+
+    if (
+        (user === "Owner" && pin === ownerPIN) ||
+        (user === "Cashier" && pin === cashierPIN)
+    ) {
+        document.getElementById("login").classList.add("hidden");
+        document.getElementById("dashboard").classList.remove("hidden");
+        document.getElementById("staffName").textContent =
+            "Logged in as: " + user;
+        document.getElementById("pin").value = "";
+    } else {
+        alert("Incorrect PIN. Please try again.");
+    }
+}
+
+function logout() {
+    document.getElementById("dashboard").classList.add("hidden");
+    document.getElementById("login").classList.remove("hidden");
+}
+
+function showMessage(name) {
+    alert(name + " feature will be added.");
+}
+</script>
+
+</body>
+</html>
