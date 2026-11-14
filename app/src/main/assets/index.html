@@ -239,28 +239,49 @@ function closeOrder() {
     document.getElementById("dashboard").classList.remove("hidden");
 }
 
+
 function saveOrder() {
     const room = document.getElementById("roomNumber").value.trim();
     const guest = document.getElementById("guestName").value.trim();
     const staff = document.getElementById("orderStaffName").value.trim();
 
     if (!room || !guest || !staff) {
-        alert("Please complete Room Number, Guest Name and Staff Name.");
+        alert("Please complete all order information.");
         return;
     }
 
-    let orders = JSON.parse(localStorage.getItem("samuhOrders") || "[]");
+    if (currentOrderItems.length === 0) {
+        alert("Please add at least one order item.");
+        return;
+    }
+
+    const total = currentOrderItems.reduce(
+        (sum, item) => sum + item.total, 0
+    );
+
+    let orders = JSON.parse(
+        localStorage.getItem("samuhOrders") || "[]"
+    );
 
     orders.push({
         roomNumber: room,
         guestName: guest,
         staffName: staff,
-        date: new Date().toISOString()
+        items: [...currentOrderItems],
+        subtotal: total,
+        date: new Date().toISOString(),
+        status: "Held"
     });
 
-    localStorage.setItem("samuhOrders", JSON.stringify(orders));
+    localStorage.setItem(
+        "samuhOrders",
+        JSON.stringify(orders)
+    );
 
-    alert("Order information saved successfully.");
+    alert("Order saved successfully.");
+
+    currentOrderItems = [];
+    displayOrderItems();
 
     document.getElementById("roomNumber").value = "";
     document.getElementById("guestName").value = "";
@@ -268,7 +289,57 @@ function saveOrder() {
 
     closeOrder();
 }
-   
+
+ 
+let currentOrderItems = [];
+
+function addOrderItem() {
+    const name = document.getElementById("itemName").value.trim();
+    const qty = Number(document.getElementById("itemQty").value);
+    const price = Number(document.getElementById("itemPrice").value);
+
+    if (!name || !Number.isInteger(qty) || qty < 1 ||
+        !Number.isFinite(price) || price < 0) {
+        alert("Please enter a valid item, quantity and price.");
+        return;
+    }
+
+    currentOrderItems.push({
+        name: name,
+        quantity: qty,
+        price: price,
+        total: qty * price
+    });
+
+    displayOrderItems();
+
+    document.getElementById("itemName").value = "";
+    document.getElementById("itemQty").value = "";
+    document.getElementById("itemPrice").value = "";
+}
+
+function displayOrderItems() {
+    const container = document.getElementById("orderItems");
+    let total = 0;
+
+    container.innerHTML = "";
+
+    currentOrderItems.forEach((item, index) => {
+        total += item.total;
+
+        const div = document.createElement("div");
+        div.className = "card";
+        div.textContent =
+            item.name + " x " + item.quantity +
+            " = Rp" + item.total.toLocaleString("id-ID");
+
+        container.appendChild(div);
+    });
+
+    document.getElementById("orderTotal").textContent =
+        "Total: Rp" + total.toLocaleString("id-ID");
+}
+  
 </script>
 
 </body>
