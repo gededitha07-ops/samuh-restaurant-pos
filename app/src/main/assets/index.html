@@ -103,49 +103,46 @@ h3 {
         <button onclick="login()">Login</button>
     </div>
 
-    <div id="dashboard" class="hidden">
+    
+<div id="dashboard" class="hidden">
 
-        <div class="card">
-            <h3>Welcome to Samuh Restaurant</h3>
-            <p id="staffName"></p>
-            <button onclick="logout()">Logout</button>
-        </div>
+    <div class="card">
+        <h3>Welcome to Samuh Restaurant</h3>
+        <p id="staffName"></p>
+        <button onclick="logout()">Logout</button>
+    </div>
 
-        <div class="card">
-            <h3>Main Menu</h3>
+    <div class="card">
+        <h3>Main Menu</h3>
 
-            <button class="menu-button"
-                onclick="openOrder()">
-                New Order
-            </button>
+        <button class="menu-button"
+            onclick="openOrder()">
+            New Order
+        </button>
 
-            
-            <button class="menu-button"
-                onclick="openMenuManagement()">
-                Menu Management
-            </button>
+        <button class="menu-button"
+            onclick="openMenuManagement()">
+            Menu Management
+        </button>
 
+        <button class="menu-button"
+            onclick="openHeldOrders()">
+            Held Orders
+        </button>
 
-            <button class="menu-button"
-                onclick="openHeldOrders()">
-                Held Orders
-            </button>
-            </button>
+        <button class="menu-button"
+            onclick="openReports()">
+            Reports
+        </button>
 
-            <button class="menu-button"
-                onclick="showMessage('Reports')">
-                Reports
-            </button>
-
-            <button class="menu-button"
-                onclick="showMessage('Settings')">
-                Settings
-            </button>
-        </div>
-
+        <button class="menu-button"
+            onclick="showMessage('Settings')">
+            Settings
+        </button>
     </div>
 
 </div>
+
 
 <div id="orderPage" class="hidden">
 
@@ -253,11 +250,27 @@ h3 {
         <input type="text" id="menuName"
                placeholder="Enter food or drink name">
 
-        <label>Category</label>
-        <select id="menuCategory">
-            <option value="Food">Food</option>
-            <option value="Drink">Drink</option>
-        </select>
+        
+<label>Category</label>
+<select id="menuCategory" onchange="updateStockFields()">
+    <option value="Food">Food</option>
+    <option value="Drink">Drink</option>
+</select>
+
+<div id="stockSettings" class="hidden">
+    <label>Stock Setting</label>
+    <select id="stockMode" onchange="updateStockFields()">
+        <option value="without">Without Stock</option>
+        <option value="with">With Stock</option>
+    </select>
+
+    <div id="stockQuantityField" class="hidden">
+        <label>Stock Quantity</label>
+        <input type="number" id="menuStock"
+               placeholder="Enter stock quantity" min="0">
+    </div>
+</div>
+
 
         <label>Price (Rp)</label>
         <input type="number" id="menuPrice"
@@ -281,6 +294,39 @@ h3 {
     </div>
 </div>
    
+<div id="reportsPage" class="hidden">
+    <div class="card">
+        <h3>Sales Reports</h3>
+
+        <p id="reportDate"></p>
+
+        <hr>
+
+        <h3>Payment Summary</h3>
+
+        <p id="totalCash">Cash: Rp0</p>
+
+        <p id="totalBank">Bank Payout: Rp0</p>
+
+        <p id="totalSign">Sign (Unpaid): Rp0</p>
+
+        <h3 id="grandTotal">Grand Total: Rp0</h3>
+
+        <hr>
+
+        <h3>Transaction History</h3>
+
+        <div id="transactionHistory">
+            No transactions yet.
+        </div>
+
+        <button onclick="closeReports()"
+                style="background:#64748b">
+            Back to Dashboard
+        </button>
+    </div>
+</div>
+
 
 <script>
  
@@ -295,13 +341,48 @@ function closeMenuManagement() {
     document.getElementById("dashboard").classList.remove("hidden");
 }
 
+function updateStockFields() {
+    const category = document.getElementById("menuCategory").value;
+    const stockSettings = document.getElementById("stockSettings");
+    const stockMode = document.getElementById("stockMode").value;
+    const stockQuantityField = document.getElementById("stockQuantityField");
+
+    if (category === "Drink") {
+        stockSettings.classList.remove("hidden");
+
+        if (stockMode === "with") {
+            stockQuantityField.classList.remove("hidden");
+        } else {
+            stockQuantityField.classList.add("hidden");
+        }
+    } else {
+        stockSettings.classList.add("hidden");
+        stockQuantityField.classList.add("hidden");
+    }
+}
+
+
 function saveMenuItem() {
     const name = document.getElementById("menuName").value.trim();
     const category = document.getElementById("menuCategory").value;
     const price = Number(document.getElementById("menuPrice").value);
 
+    const stockMode = category === "Drink"
+        ? document.getElementById("stockMode").value
+        : "without";
+
+    const stock = stockMode === "with"
+        ? Number(document.getElementById("menuStock").value)
+        : null;
+
     if (!name || !Number.isFinite(price) || price <= 0) {
         alert("Please enter a valid item name and price.");
+        return;
+    }
+
+    if (stockMode === "with" &&
+        (!Number.isInteger(stock) || stock < 0)) {
+        alert("Please enter a valid stock quantity.");
         return;
     }
 
@@ -313,18 +394,24 @@ function saveMenuItem() {
         id: Date.now().toString(),
         name: name,
         category: category,
-        price: price
+        price: price,
+        stockMode: stockMode,
+        stock: stock
     });
 
     localStorage.setItem("samuhMenus", JSON.stringify(menus));
 
     document.getElementById("menuName").value = "";
     document.getElementById("menuPrice").value = "";
+    document.getElementById("menuStock").value = "";
 
+    updateStockFields();
     displayMenuItems();
 
     alert("Menu item saved successfully.");
 }
+
+
 
 
 function displayMenuItems() {
@@ -352,6 +439,16 @@ function displayMenuItems() {
             item.category + " - Rp" +
             item.price.toLocaleString("id-ID");
 
+        const stockInfo = document.createElement("p");
+
+        if (item.category === "Drink") {
+            stockInfo.textContent = item.stockMode === "with"
+                ? "Stock: " + item.stock
+                : "Stock: Not Tracked";
+        } else {
+            stockInfo.textContent = "Stock: Not Applicable";
+        }
+
         const editButton = document.createElement("button");
         editButton.textContent = "Edit";
         editButton.onclick = () => editMenuItem(index);
@@ -361,10 +458,11 @@ function displayMenuItems() {
         deleteButton.style.background = "#dc2626";
         deleteButton.onclick = () => deleteMenuItem(index);
 
-        card.append(title, details, editButton, deleteButton);
+        card.append(title, details, stockInfo, editButton, deleteButton);
         container.appendChild(card);
     });
 }
+
 
 function showSelectedMenuPrice() {
     const menus = JSON.parse(
@@ -407,21 +505,19 @@ function loadMenuOptions() {
 }
 
 
+
 function editMenuItem(index) {
     let menus = JSON.parse(
         localStorage.getItem("samuhMenus") || "[]"
     );
 
     const item = menus[index];
-
     if (!item) return;
 
-    const newName = prompt("Enter new item name:", item.name);
-
+    const newName = prompt("Enter item name:", item.name);
     if (newName === null) return;
 
-    const newPrice = prompt("Enter new price:", item.price);
-
+    const newPrice = prompt("Enter selling price:", item.price);
     if (newPrice === null) return;
 
     const price = Number(newPrice);
@@ -431,23 +527,62 @@ function editMenuItem(index) {
         return;
     }
 
-    const newCategory = prompt(
+    let newCategory = prompt(
         "Enter category: Food or Drink",
         item.category
     );
 
     if (newCategory === null) return;
 
-    if (!["Food", "Drink"].includes(newCategory.trim())) {
+    newCategory = newCategory.trim();
+
+    if (!["Food", "Drink"].includes(newCategory)) {
         alert("Category must be Food or Drink.");
         return;
+    }
+
+    let stockMode = "without";
+    let stock = null;
+
+    if (newCategory === "Drink") {
+        stockMode = prompt(
+            "Enter stock setting: with or without",
+            item.stockMode || "without"
+        );
+
+        if (stockMode === null) return;
+
+        stockMode = stockMode.trim().toLowerCase();
+
+        if (!["with", "without"].includes(stockMode)) {
+            alert("Enter with or without.");
+            return;
+        }
+
+        if (stockMode === "with") {
+            const newStock = prompt(
+                "Enter stock quantity:",
+                item.stockMode === "with" ? item.stock : "0"
+            );
+
+            if (newStock === null) return;
+
+            stock = Number(newStock);
+
+            if (!Number.isInteger(stock) || stock < 0) {
+                alert("Invalid stock quantity.");
+                return;
+            }
+        }
     }
 
     menus[index] = {
         ...item,
         name: newName.trim(),
         price: price,
-        category: newCategory.trim()
+        category: newCategory,
+        stockMode: stockMode,
+        stock: stock
     };
 
     localStorage.setItem("samuhMenus", JSON.stringify(menus));
@@ -456,6 +591,7 @@ function editMenuItem(index) {
 
     alert("Menu item updated successfully.");
 }
+
 
  
 function deleteMenuItem(index) {
@@ -655,6 +791,7 @@ function calculateChange() {
         "Change: Rp" + change.toLocaleString("id-ID");
 }
 
+
 function completePayment() {
     const method = document.getElementById("paymentMethod").value;
 
@@ -666,7 +803,8 @@ function completePayment() {
         ? Number(document.getElementById("amountReceived").value)
         : total;
 
-    if (method === "Cash" && received < total) {
+    if (method === "Cash" &&
+        (!Number.isFinite(received) || received < total)) {
         alert("Amount received is not enough.");
         return;
     }
@@ -674,6 +812,37 @@ function completePayment() {
     const orders = JSON.parse(
         localStorage.getItem("samuhOrders") || "[]"
     );
+
+    let menus = JSON.parse(
+        localStorage.getItem("samuhMenus") || "[]"
+    );
+
+    // Check stock before completing payment
+     {
+        for (const orderItem of currentOrderItems) {
+            const menu = menus.find(
+                item => item.name === orderItem.name
+            );
+
+            if (
+                menu &&
+                menu.category === "Drink" &&
+                menu.stockMode === "with"
+            ) {
+                const totalOrdered = currentOrderItems
+                    .filter(item => item.name === orderItem.name)
+                    .reduce((sum, item) => sum + item.quantity, 0);
+
+                if (menu.stock < totalOrdered) {
+                    alert(
+                        "Not enough stock for " + menu.name +
+                        ". Available stock: " + menu.stock
+                    );
+                    return;
+                }
+            }
+        }
+    }
 
     const orderData = {
         id: currentOrderId || Date.now().toString(),
@@ -699,7 +868,32 @@ function completePayment() {
         orders.push(orderData);
     }
 
-    localStorage.setItem("samuhOrders", JSON.stringify(orders));
+    // Reduce drink stock only after successful payment
+     {
+        currentOrderItems.forEach(orderItem => {
+            const menu = menus.find(
+                item => item.name === orderItem.name
+            );
+
+            if (
+                menu &&
+                menu.category === "Drink" &&
+                menu.stockMode === "with"
+            ) {
+                menu.stock -= orderItem.quantity;
+            }
+        });
+
+        localStorage.setItem(
+            "samuhMenus",
+            JSON.stringify(menus)
+        );
+    }
+
+    localStorage.setItem(
+        "samuhOrders",
+        JSON.stringify(orders)
+    );
 
     alert(method === "Sign"
         ? "Order saved as unpaid room charge."
@@ -709,10 +903,12 @@ function completePayment() {
     currentOrderId = null;
 
     displayOrderItems();
+    displayMenuItems();
 
     document.getElementById("paymentPage").classList.add("hidden");
     document.getElementById("dashboard").classList.remove("hidden");
 }
+
 
 function backToOrder() {
     document.getElementById("paymentPage").classList.add("hidden");
@@ -871,6 +1067,99 @@ function openHeldOrder(index) {
 
     document.getElementById("heldOrdersPage").classList.add("hidden");
     document.getElementById("orderPage").classList.remove("hidden");
+}
+
+function openReports() {
+    document.getElementById("dashboard").classList.add("hidden");
+    document.getElementById("reportsPage").classList.remove("hidden");
+
+    displayReports();
+}
+
+function closeReports() {
+    document.getElementById("reportsPage").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+}
+
+function displayReports() {
+    const orders = JSON.parse(
+        localStorage.getItem("samuhOrders") || "[]"
+    );
+
+    let totalCash = 0;
+    let totalBank = 0;
+    let totalSign = 0;
+    let grandTotal = 0;
+
+    const history = document.getElementById("transactionHistory");
+    history.innerHTML = "";
+
+    document.getElementById("reportDate").textContent =
+        "Report Date: " +
+        new Date().toLocaleDateString("en-GB");
+
+    const transactions = orders.filter(
+        order => order.status === "Paid" ||
+                 order.status === "Unpaid"
+    );
+
+    if (transactions.length === 0) {
+        history.textContent = "No transactions yet.";
+    }
+
+    transactions.forEach(order => {
+        const amount = Number(order.subtotal) || 0;
+
+        grandTotal += amount;
+
+        if (order.paymentMethod === "Cash") {
+            totalCash += amount;
+        } else if (order.paymentMethod === "Bank Payout") {
+            totalBank += amount;
+        } else if (order.paymentMethod === "Sign") {
+            totalSign += amount;
+        }
+
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const date = new Date(order.date);
+
+        const details = document.createElement("p");
+        details.textContent =
+            "Date: " + date.toLocaleDateString("en-GB") +
+            " | Time: " + date.toLocaleTimeString("en-GB");
+
+        const info = document.createElement("p");
+        info.textContent =
+            "Room: " + order.roomNumber +
+            " | Guest: " + order.guestName +
+            " | Staff: " + order.staffName;
+
+        const payment = document.createElement("p");
+        payment.textContent =
+            "Payment: " + order.paymentMethod +
+            (order.status === "Unpaid" ? " (Unpaid)" : " (Paid)");
+
+        const amountText = document.createElement("h3");
+        amountText.textContent =
+            "Total: Rp" + amount.toLocaleString("id-ID");
+
+        card.append(details, info, payment, amountText);
+        history.appendChild(card);
+    });
+
+    document.getElementById("totalCash").textContent =
+        "Cash: Rp" + totalCash.toLocaleString("id-ID");
+
+    document.getElementById("totalBank").textContent =
+        "Bank Payout: Rp" + totalBank.toLocaleString("id-ID");
+
+    document.getElementById("totalSign").textContent =
+        "Sign (Unpaid): Rp" + totalSign.toLocaleString("id-ID");
+
+    document.getElementById("grandTotal").textContent =
+        "Grand Total: Rp" + grandTotal.toLocaleString("id-ID");
 }
 
 
