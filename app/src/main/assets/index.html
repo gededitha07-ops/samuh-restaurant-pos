@@ -168,9 +168,13 @@ h3 {
 
          <h3>Order Items</h3>
 
-         <label>Item Name</label>
-         <input type="text" id="itemName"
-                placeholder="Enter food or drink name">
+         
+        <label>Select Menu Item</label>
+        <select id="selectedMenu"
+        onchange="showSelectedMenuPrice()">
+        <option value="">Choose food or drink</option>
+        </select>
+
 
          <label>Quantity</label>
          <input type="number" id="itemQty"
@@ -362,6 +366,47 @@ function displayMenuItems() {
     });
 }
 
+function showSelectedMenuPrice() {
+    const menus = JSON.parse(
+        localStorage.getItem("samuhMenus") || "[]"
+    );
+
+    const selectedIndex =
+        document.getElementById("selectedMenu").value;
+
+    const item = menus[Number(selectedIndex)];
+
+    if (!item) {
+        document.getElementById("itemPrice").value = "";
+        return;
+    }
+
+    document.getElementById("itemPrice").value = item.price;
+}
+
+function loadMenuOptions() {
+    const menus = JSON.parse(
+        localStorage.getItem("samuhMenus") || "[]"
+    );
+
+    const select = document.getElementById("selectedMenu");
+
+    select.innerHTML =
+        '<option value="">Choose food or drink</option>';
+
+    menus.forEach((item, index) => {
+        const option = document.createElement("option");
+
+        option.value = index;
+        option.textContent =
+            item.name + " - Rp" +
+            item.price.toLocaleString("id-ID");
+
+        select.appendChild(option);
+    });
+}
+
+
 function editMenuItem(index) {
     let menus = JSON.parse(
         localStorage.getItem("samuhMenus") || "[]"
@@ -468,14 +513,18 @@ function showMessage(name) {
     alert(name + " feature will be added.");
 }
  
+
 function openOrder() {
     currentOrderId = null;
     currentOrderItems = [];
+
+    loadMenuOptions();
     displayOrderItems();
 
     document.getElementById("dashboard").classList.add("hidden");
     document.getElementById("orderPage").classList.remove("hidden");
 }
+
 
 function closeOrder() {
     document.getElementById("orderPage").classList.add("hidden");
@@ -675,30 +724,6 @@ function backToOrder() {
 let currentOrderItems = [];
 let currentOrderId = null;
 
-function addOrderItem() {
-    const name = document.getElementById("itemName").value.trim();
-    const qty = Number(document.getElementById("itemQty").value);
-    const price = Number(document.getElementById("itemPrice").value);
-
-    if (!name || !Number.isInteger(qty) || qty < 1 ||
-        !Number.isFinite(price) || price < 0) {
-        alert("Please enter a valid item, quantity and price.");
-        return;
-    }
-
-    currentOrderItems.push({
-        name: name,
-        quantity: qty,
-        price: price,
-        total: qty * price
-    });
-
-    displayOrderItems();
-
-    document.getElementById("itemName").value = "";
-    document.getElementById("itemQty").value = "";
-    document.getElementById("itemPrice").value = "";
-}
 
 function displayOrderItems() {
     const container = document.getElementById("orderItems");
@@ -720,6 +745,40 @@ function displayOrderItems() {
 
     document.getElementById("orderTotal").textContent =
         "Total: Rp" + total.toLocaleString("id-ID");
+}
+
+
+function addOrderItem() {
+    const selectedIndex =
+        document.getElementById("selectedMenu").value;
+
+    const menus = JSON.parse(
+        localStorage.getItem("samuhMenus") || "[]"
+    );
+
+    const item = menus[Number(selectedIndex)];
+
+    const qty = Number(
+        document.getElementById("itemQty").value
+    );
+
+    if (!item || !Number.isInteger(qty) || qty < 1) {
+        alert("Please select a menu item and enter a valid quantity.");
+        return;
+    }
+
+    currentOrderItems.push({
+        name: item.name,
+        quantity: qty,
+        price: item.price,
+        total: qty * item.price
+    });
+
+    displayOrderItems();
+
+    document.getElementById("selectedMenu").value = "";
+    document.getElementById("itemQty").value = "";
+    document.getElementById("itemPrice").value = "";
 }
     
   
@@ -815,28 +874,6 @@ function openHeldOrder(index) {
 }
 
 
-    orders.forEach((order, index) => {
-        if (order.status !== "Held") return;
-
-        const card = document.createElement("div");
-        card.className = "card";
-
-        const title = document.createElement("h3");
-        title.textContent = "Room " + order.roomNumber;
-
-        const details = document.createElement("p");
-        details.textContent =
-            "Guest: " + order.guestName +
-            " | Staff: " + order.staffName;
-
-        const total = document.createElement("p");
-        total.textContent =
-            "Total: Rp" + order.subtotal.toLocaleString("id-ID");
-
-        card.append(title, details, total);
-        container.appendChild(card);
-    });
-}
     
 updatePaymentMethod();
 </script>
