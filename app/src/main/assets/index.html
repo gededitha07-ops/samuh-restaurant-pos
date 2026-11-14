@@ -115,7 +115,7 @@ h3 {
             <h3>Main Menu</h3>
 
             <button class="menu-button"
-                onclick="showMessage('New Order')">
+                onclick="openOrder()">
                 New Order
             </button>
 
@@ -143,6 +143,36 @@ h3 {
     </div>
 
 </div>
+
+<div id="orderPage" class="hidden">
+
+    <div class="card">
+        <h3>Taking Order</h3>
+
+        <label>Room Number</label>
+        <input type="text" id="roomNumber"
+               placeholder="Enter room number">
+
+        <label>Guest Name</label>
+        <input type="text" id="guestName"
+               placeholder="Enter guest name">
+
+        <label>Staff Name</label>
+        <input type="text" id="orderStaffName"
+               placeholder="Enter staff name">
+
+        <button onclick="saveOrder()">
+            Save Order
+        </button>
+
+        <button onclick="closeOrder()"
+                style="background:#64748b">
+            Back to Dashboard
+        </button>
+    </div>
+
+</div>
+    
 
 <script>
 const ownerPIN = "1234";
@@ -174,6 +204,47 @@ function logout() {
 function showMessage(name) {
     alert(name + " feature will be added.");
 }
+ 
+function openOrder() {
+    document.getElementById("dashboard").classList.add("hidden");
+    document.getElementById("orderPage").classList.remove("hidden");
+}
+
+function closeOrder() {
+    document.getElementById("orderPage").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+}
+
+function saveOrder() {
+    const room = document.getElementById("roomNumber").value.trim();
+    const guest = document.getElementById("guestName").value.trim();
+    const staff = document.getElementById("orderStaffName").value.trim();
+
+    if (!room || !guest || !staff) {
+        alert("Please complete Room Number, Guest Name and Staff Name.");
+        return;
+    }
+
+    let orders = JSON.parse(localStorage.getItem("samuhOrders") || "[]");
+
+    orders.push({
+        roomNumber: room,
+        guestName: guest,
+        staffName: staff,
+        date: new Date().toISOString()
+    });
+
+    localStorage.setItem("samuhOrders", JSON.stringify(orders));
+
+    alert("Order information saved successfully.");
+
+    document.getElementById("roomNumber").value = "";
+    document.getElementById("guestName").value = "";
+    document.getElementById("orderStaffName").value = "";
+
+    closeOrder();
+}
+   
 </script>
 
 </body>
