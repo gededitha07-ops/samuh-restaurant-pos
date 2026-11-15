@@ -159,7 +159,7 @@ h3 {
         </button>
 
         <button class="menu-button"
-            onclick="showMessage('Settings')">
+            onclick="openSettings()">
             Settings
         </button>
     </div>
@@ -235,9 +235,16 @@ h3 {
     <div class="card">
         <h3>Payment</h3>
 
-        <p id="paymentTotal">Grand Total: Rp0</p>
+        <p id="paymentSubtotal">Subtotal: Rp0</p>
 
-        <label>Payment Method</label>
+<p id="paymentTax">Tax: Rp0</p>
+
+<p id="paymentService">Service Charge: Rp0</p>
+
+<hr>
+
+<h3 id="paymentTotal">Grand Total: Rp0</h3>
+
         <label>Payment Method</label>
         <select id="paymentMethod"
                 onchange="updatePaymentMethod()">
@@ -340,6 +347,10 @@ h3 {
 <hr>
 
         <h3>Payment Summary</h3>
+        <p id="totalTransactions">Total Transactions: 0</p>
+        <p id="reportTotalTax">Total Tax: Rp0</p>
+
+        <p id="reportTotalService">Total Service Charge: Rp0</p>
 
         <p id="totalCash">Cash: Rp0</p>
 
@@ -369,6 +380,49 @@ h3 {
     </div>
 </div>
 
+
+<div id="settingsPage" class="hidden">
+    <div class="card">
+        <h3>Restaurant Settings</h3>
+
+        <h3>Tax Settings</h3>
+
+        <label>Tax Status</label>
+        <select id="taxEnabled">
+            <option value="false">Disabled</option>
+            <option value="true">Enabled</option>
+        </select>
+
+        <label>Tax Rate (%)</label>
+        <input type="number" id="taxRate"
+               min="0" max="100" step="0.01"
+               placeholder="Enter tax percentage">
+
+        <hr>
+
+        <h3>Service Charge Settings</h3>
+
+        <label>Service Charge Status</label>
+        <select id="serviceEnabled">
+            <option value="false">Disabled</option>
+            <option value="true">Enabled</option>
+        </select>
+
+        <label>Service Charge Rate (%)</label>
+        <input type="number" id="serviceRate"
+               min="0" max="100" step="0.01"
+               placeholder="Enter service charge percentage">
+
+        <button onclick="saveSettings()">
+            Save Settings
+        </button>
+
+        <button onclick="closeSettings()"
+                style="background:#64748b">
+            Back to Dashboard
+        </button>
+    </div>
+</div>
 
 <script>
  
@@ -664,6 +718,7 @@ function deleteMenuItem(index) {
 const ownerPIN = "1234";
 const cashierPIN = "1111";
 
+
 function login() {
     const user = document.getElementById("user").value;
     const pin = document.getElementById("pin").value;
@@ -672,10 +727,14 @@ function login() {
         (user === "Owner" && pin === ownerPIN) ||
         (user === "Cashier" && pin === cashierPIN)
     ) {
+        window.currentUserRole = user;
+
         document.getElementById("login").classList.add("hidden");
         document.getElementById("dashboard").classList.remove("hidden");
+
         document.getElementById("staffName").textContent =
             "Logged in as: " + user;
+
         document.getElementById("pin").value = "";
     } else {
         alert("Incorrect PIN. Please try again.");
@@ -793,16 +852,115 @@ function openPayment() {
         return;
     }
 
-    const total = currentOrderItems.reduce(
+    const subtotal = currentOrderItems.reduce(
         (sum, item) => sum + item.total, 0
     );
 
+    const settings = JSON.parse(
+        localStorage.getItem("samuhSettings") || "{}"
+    );
+
+    const tax = settings.taxEnabled
+        ? Math.round(subtotal * (Number(settings.taxRate) || 0) / 100)
+        : 0;
+
+    const serviceCharge = settings.serviceEnabled
+        ? Math.round(subtotal * (Number(settings.serviceRate) || 0) / 100)
+        : 0;
+
+    const grandTotal = subtotal + tax + serviceCharge;
+
+    document.getElementById("paymentSubtotal").textContent =
+        "Subtotal: Rp" + subtotal.toLocaleString("id-ID");
+
+    document.getElementById("paymentTax").textContent =
+        "Tax: Rp" + tax.toLocaleString("id-ID");
+
+    document.getElementById("paymentService").textContent =
+        "Service Charge: Rp" + serviceCharge.toLocaleString("id-ID");
+
     document.getElementById("paymentTotal").textContent =
-        "Grand Total: Rp" + total.toLocaleString("id-ID");
+        "Grand Total: Rp" + grandTotal.toLocaleString("id-ID");
 
     document.getElementById("orderPage").classList.add("hidden");
     document.getElementById("paymentPage").classList.remove("hidden");
 }
+
+function openSettings() {
+    if (window.currentUserRole !== "Owner") {
+        alert("Only the Owner can access Settings.");
+        return;
+    }
+
+    document.getElementById("dashboard").classList.add("hidden");
+    document.getElementById("settingsPage").classList.remove("hidden");
+
+    const settings = JSON.parse(
+        localStorage.getItem("samuhSettings") || "{}"
+    );
+
+    document.getElementById("taxEnabled").value =
+        String(settings.taxEnabled || false);
+
+    document.getElementById("taxRate").value =
+        settings.taxRate || 0;
+
+    document.getElementById("serviceEnabled").value =
+        String(settings.serviceEnabled || false);
+
+    document.getElementById("serviceRate").value =
+        settings.serviceRate || 0;
+}
+
+function saveSettings() {
+    if (window.currentUserRole !== "Owner") {
+        alert("Only the Owner can change Settings.");
+        return;
+    }
+
+    const taxRate = Number(
+        document.getElementById("taxRate").value
+    );
+
+    const serviceRate = Number(
+        document.getElementById("serviceRate").value
+    );
+
+    if (
+        !Number.isFinite(taxRate) ||
+        !Number.isFinite(serviceRate) ||
+        taxRate < 0 || taxRate > 100 ||
+        serviceRate < 0 || serviceRate > 100
+    ) {
+        alert("Please enter a valid percentage between 0 and 100.");
+        return;
+    }
+
+    const settings = {
+        taxEnabled:
+            document.getElementById("taxEnabled").value === "true",
+
+        taxRate: taxRate,
+
+        serviceEnabled:
+            document.getElementById("serviceEnabled").value === "true",
+
+        serviceRate: serviceRate
+    };
+
+    localStorage.setItem(
+        "samuhSettings",
+        JSON.stringify(settings)
+    );
+
+    alert("Settings saved successfully.");
+}
+
+function closeSettings() {
+    document.getElementById("settingsPage").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+}
+
 
 function updatePaymentMethod() {
     const method = document.getElementById("paymentMethod").value;
@@ -837,16 +995,30 @@ function calculateChange() {
 function completePayment() {
     const method = document.getElementById("paymentMethod").value;
 
-    const total = currentOrderItems.reduce(
+    const subtotal = currentOrderItems.reduce(
         (sum, item) => sum + item.total, 0
     );
 
+    const settings = JSON.parse(
+        localStorage.getItem("samuhSettings") || "{}"
+    );
+
+    const tax = settings.taxEnabled
+        ? Math.round(subtotal * (Number(settings.taxRate) || 0) / 100)
+        : 0;
+
+    const serviceCharge = settings.serviceEnabled
+        ? Math.round(subtotal * (Number(settings.serviceRate) || 0) / 100)
+        : 0;
+
+    const grandTotal = subtotal + tax + serviceCharge;
+
     const received = method === "Cash"
         ? Number(document.getElementById("amountReceived").value)
-        : total;
+        : grandTotal;
 
     if (method === "Cash" &&
-        (!Number.isFinite(received) || received < total)) {
+        (!Number.isFinite(received) || received < grandTotal)) {
         alert("Amount received is not enough.");
         return;
     }
@@ -860,28 +1032,26 @@ function completePayment() {
     );
 
     // Check stock before completing payment
-     {
-        for (const orderItem of currentOrderItems) {
-            const menu = menus.find(
-                item => item.name === orderItem.name
-            );
+    for (const orderItem of currentOrderItems) {
+        const menu = menus.find(
+            item => item.name === orderItem.name
+        );
 
-            if (
-                menu &&
-                menu.category === "Drink" &&
-                menu.stockMode === "with"
-            ) {
-                const totalOrdered = currentOrderItems
-                    .filter(item => item.name === orderItem.name)
-                    .reduce((sum, item) => sum + item.quantity, 0);
+        if (
+            menu &&
+            menu.category === "Drink" &&
+            menu.stockMode === "with"
+        ) {
+            const totalOrdered = currentOrderItems
+                .filter(item => item.name === orderItem.name)
+                .reduce((sum, item) => sum + item.quantity, 0);
 
-                if (menu.stock < totalOrdered) {
-                    alert(
-                        "Not enough stock for " + menu.name +
-                        ". Available stock: " + menu.stock
-                    );
-                    return;
-                }
+            if (menu.stock < totalOrdered) {
+                alert(
+                    "Not enough stock for " + menu.name +
+                    ". Available stock: " + menu.stock
+                );
+                return;
             }
         }
     }
@@ -892,10 +1062,17 @@ function completePayment() {
         guestName: document.getElementById("guestName").value.trim(),
         staffName: document.getElementById("orderStaffName").value.trim(),
         items: [...currentOrderItems],
-        subtotal: total,
+
+        subtotal: subtotal,
+        tax: tax,
+        taxRate: Number(settings.taxRate) || 0,
+        serviceCharge: serviceCharge,
+        serviceRate: Number(settings.serviceRate) || 0,
+        grandTotal: grandTotal,
+
         paymentMethod: method,
         amountReceived: received,
-        change: method === "Cash" ? received - total : 0,
+        change: method === "Cash" ? received - grandTotal : 0,
         status: method === "Sign" ? "Unpaid" : "Paid",
         date: new Date().toISOString()
     };
@@ -910,27 +1087,25 @@ function completePayment() {
         orders.push(orderData);
     }
 
-    // Reduce drink stock only after successful payment
-     {
-        currentOrderItems.forEach(orderItem => {
-            const menu = menus.find(
-                item => item.name === orderItem.name
-            );
-
-            if (
-                menu &&
-                menu.category === "Drink" &&
-                menu.stockMode === "with"
-            ) {
-                menu.stock -= orderItem.quantity;
-            }
-        });
-
-        localStorage.setItem(
-            "samuhMenus",
-            JSON.stringify(menus)
+    // Reduce drink stock after successful payment
+    currentOrderItems.forEach(orderItem => {
+        const menu = menus.find(
+            item => item.name === orderItem.name
         );
-    }
+
+        if (
+            menu &&
+            menu.category === "Drink" &&
+            menu.stockMode === "with"
+        ) {
+            menu.stock -= orderItem.quantity;
+        }
+    });
+
+    localStorage.setItem(
+        "samuhMenus",
+        JSON.stringify(menus)
+    );
 
     localStorage.setItem(
         "samuhOrders",
@@ -1160,6 +1335,12 @@ function displayReports() {
     let totalBank = 0;
     let totalSign = 0;
     let grandTotal = 0;
+    let totalTax = 0;
+    let totalService = 0;
+
+    let countCash = 0;
+    let countBank = 0;
+    let countSign = 0;
 
     const history =
         document.getElementById("transactionHistory");
@@ -1185,6 +1366,9 @@ function displayReports() {
                localDate <= endDate;
     });
 
+    document.getElementById("totalTransactions").textContent =
+        "Total Transactions: " + transactions.length;
+
     document.getElementById("reportDate").textContent =
         "Report Period: " + startDate + " to " + endDate;
 
@@ -1194,16 +1378,24 @@ function displayReports() {
     }
 
     transactions.forEach(order => {
-        const amount = Number(order.subtotal) || 0;
+        const amount = Number(
+    order.grandTotal ?? order.subtotal
+) || 0;
 
         grandTotal += amount;
+        totalTax += Number(order.tax) || 0;
+
+totalService += Number(order.serviceCharge) || 0;
 
         if (order.paymentMethod === "Cash") {
             totalCash += amount;
+            countCash++;
         } else if (order.paymentMethod === "Bank Payout") {
             totalBank += amount;
+            countBank++;
         } else if (order.paymentMethod === "Sign") {
             totalSign += amount;
+            countSign++;
         }
 
         const card = document.createElement("div");
@@ -1227,27 +1419,67 @@ function displayReports() {
             "Payment: " + order.paymentMethod +
             (order.status === "Unpaid" ? " (Unpaid)" : " (Paid)");
 
+        const taxText = document.createElement("p");
+taxText.textContent =
+    "Tax: Rp" + (Number(order.tax) || 0).toLocaleString("id-ID");
+
+const serviceText = document.createElement("p");
+serviceText.textContent =
+    "Service Charge: Rp" +
+    (Number(order.serviceCharge) || 0).toLocaleString("id-ID");
         const amountText = document.createElement("h3");
         amountText.textContent =
             "Total: Rp" + amount.toLocaleString("id-ID");
 
-        card.append(details, info, payment, amountText);
-        history.appendChild(card);
+        
+const itemDetails = document.createElement("div");
+
+order.items.forEach(item => {
+    const itemRow = document.createElement("p");
+
+    itemRow.textContent =
+        item.name +
+        " x " + item.quantity +
+        " = Rp" + item.total.toLocaleString("id-ID");
+
+    itemDetails.appendChild(itemRow);
+});
+
+card.append(
+    details,
+    info,
+    payment,
+    itemDetails,
+    taxText,
+    serviceText,
+    amountText
+);
+
+history.appendChild(card);
+
     });
 
     document.getElementById("totalCash").textContent =
-        "Cash: Rp" + totalCash.toLocaleString("id-ID");
+        "Cash (" + countCash + " transactions): Rp" +
+        totalCash.toLocaleString("id-ID");
 
     document.getElementById("totalBank").textContent =
-        "Bank Payout: Rp" + totalBank.toLocaleString("id-ID");
+        "Bank Payout (" + countBank + " transactions): Rp" +
+        totalBank.toLocaleString("id-ID");
 
     document.getElementById("totalSign").textContent =
-        "Sign (Unpaid): Rp" + totalSign.toLocaleString("id-ID");
+        "Sign - Unpaid (" + countSign + " transactions): Rp" +
+        totalSign.toLocaleString("id-ID");
 
     document.getElementById("grandTotal").textContent =
         "Grand Total: Rp" + grandTotal.toLocaleString("id-ID");
-}
+    document.getElementById("reportTotalTax").textContent =
+    "Total Tax: Rp" + totalTax.toLocaleString("id-ID");
 
+document.getElementById("reportTotalService").textContent =
+    "Total Service Charge: Rp" +
+    totalService.toLocaleString("id-ID");
+}
 
 function printReport() {
     const startDate =
