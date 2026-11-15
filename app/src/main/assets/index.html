@@ -159,9 +159,10 @@ h3 {
         </button>
 
         <button class="menu-button"
-            onclick="openMenuManagement()">
-            Menu Management
-        </button>
+    id="menuManagementButton"
+    onclick="openMenuManagement()">
+    Menu Management
+</button>
 
         <button class="menu-button"
             onclick="openHeldOrders()">
@@ -465,6 +466,11 @@ h3 {
 <script>
  
 function openMenuManagement() {
+    if (window.currentUserRole !== "Owner") {
+        alert("Only the Owner can access Menu Management.");
+        return;
+    }
+
     document.getElementById("dashboard").classList.add("hidden");
     document.getElementById("menuPage").classList.remove("hidden");
     displayMenuItems();
@@ -766,6 +772,8 @@ function login() {
         (user === "Cashier" && pin === cashierPIN)
     ) {
         window.currentUserRole = user;
+        document.getElementById("menuManagementButton").style.display =
+    user === "Owner" ? "block" : "none";
 
         document.getElementById("login").classList.add("hidden");
         document.getElementById("dashboard").classList.remove("hidden");
