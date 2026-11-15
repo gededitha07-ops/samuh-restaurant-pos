@@ -11,12 +11,25 @@
         visibility: hidden;
     }
 
-    #reportsPage,
-    #reportsPage * {
+    body[data-print-mode="report"] #reportsPage,
+    body[data-print-mode="report"] #reportsPage * {
         visibility: visible;
     }
 
-    #reportsPage {
+    body[data-print-mode="receipt"] #receiptArea,
+    body[data-print-mode="receipt"] #receiptArea * {
+        visibility: visible;
+    }
+
+    body[data-print-mode="report"] #reportsPage {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    body[data-print-mode="receipt"] #receiptArea {
         display: block !important;
         position: absolute;
         left: 0;
@@ -1495,6 +1508,7 @@ document.getElementById("reportTotalService").textContent =
     totalService.toLocaleString("id-ID");
 }
 
+
 function printReport() {
     const startDate =
         document.getElementById("reportStartDate").value;
@@ -1507,6 +1521,8 @@ function printReport() {
         return;
     }
 
+    document.body.dataset.printMode = "report";
+
     if (typeof Android !== "undefined" &&
         Android.printReport) {
         Android.printReport();
@@ -1514,6 +1530,7 @@ function printReport() {
         alert("Android printing service is not available.");
     }
 }
+
 
 
 function printReceipt(order) {
@@ -1645,7 +1662,9 @@ const paperSize = settings.receiptPaperSize || "58mm";
             </div>
         `).join("")}
     `;
-
+    
+    document.body.dataset.printMode = "receipt";
+    
     if (typeof Android !== "undefined" && Android.printReceipt) {
         Android.printReceipt();
     } else {
