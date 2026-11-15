@@ -468,6 +468,23 @@ h3 {
         <button onclick="saveSettings()">
             Save Settings
         </button>
+        <hr>
+
+<h3>Data Backup & Restore</h3>
+
+<button onclick="backupData()">
+    Backup Data
+</button>
+
+<button onclick="restoreData()">
+    Restore Data
+</button>
+
+<input type="file"
+       id="backupFile"
+       accept=".json,application/json"
+       style="display:none"
+       onchange="processRestore(event)">
 
         <button onclick="closeSettings()"
                 style="background:#64748b">
