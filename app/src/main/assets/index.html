@@ -480,12 +480,6 @@ h3 {
     Restore Data
 </button>
 
-<input type="file"
-       id="backupFile"
-       accept=".json,application/json"
-       style="display:none"
-       onchange="processRestore(event)">
-
         <button onclick="closeSettings()"
                 style="background:#64748b">
             Back to Dashboard
@@ -1751,6 +1745,130 @@ function changePin() {
 
     alert(selectedUser + " PIN changed successfully.");
 }
+    
+ function backupData() {
+    if (window.currentUserRole !== "Owner") {
+        alert("Only Owner can backup data.");
+        return;
+    }
+
+    const data = {
+        version: 1,
+        app: "Samuh Restaurant POS",
+        createdAt: new Date().toISOString(),
+
+        samuhMenus: JSON.parse(
+            localStorage.getItem("samuhMenus") || "[]"
+        ),
+
+        samuhOrders: JSON.parse(
+            localStorage.getItem("samuhOrders") || "[]"
+        ),
+
+        samuhSettings: JSON.parse(
+            localStorage.getItem("samuhSettings") || "{}"
+        ),
+
+        samuhOwnerPIN:
+            localStorage.getItem("samuhOwnerPIN") || "1234",
+
+        samuhCashierPIN:
+            localStorage.getItem("samuhCashierPIN") || "1111"
+    };
+
+    if (typeof Android !== "undefined" && Android.backupData) {
+        Android.backupData(JSON.stringify(data));
+    } else {
+        alert("Android backup service unavailable.");
+    }
+}
+
+function restoreData() {
+    if (window.currentUserRole !== "Owner") {
+        alert("Only Owner can restore data.");
+        return;
+    }
+
+    if (typeof Android !== "undefined" && Android.restoreData) {
+        Android.restoreData();
+    } else {
+        alert("Android restore service unavailable.");
+    }
+}
+  window.onBackupSaved = function() {
+    alert("Backup saved successfully.");
+};
+
+window.onBackupRestored = function(jsonString) {
+    try {
+        const data = JSON.parse(jsonString);
+
+        // Check backup structure
+        if (
+            !data ||
+            !Array.isArray(data.samuhMenus) ||
+            !Array.isArray(data.samuhOrders) ||
+            !data.samuhSettings ||
+            typeof data.samuhSettings !== "object" ||
+            Array.isArray(data.samuhSettings)
+        ) {
+            alert("Invalid backup file.");
+            return;
+        }
+
+        if (
+            typeof data.samuhOwnerPIN !== "string" ||
+            typeof data.samuhCashierPIN !== "string"
+        ) {
+            alert("Backup PIN data is invalid.");
+            return;
+        }
+
+        const confirmation = confirm(
+            "Restore this backup? Current app data will be replaced."
+        );
+
+        if (!confirmation) {
+            return;
+        }
+
+        localStorage.setItem(
+            "samuhMenus",
+            JSON.stringify(data.samuhMenus)
+        );
+
+        localStorage.setItem(
+            "samuhOrders",
+            JSON.stringify(data.samuhOrders)
+        );
+
+        localStorage.setItem(
+            "samuhSettings",
+            JSON.stringify(data.samuhSettings)
+        );
+
+        localStorage.setItem(
+            "samuhOwnerPIN",
+            data.samuhOwnerPIN
+        );
+
+        localStorage.setItem(
+            "samuhCashierPIN",
+            data.samuhCashierPIN
+        );
+
+        alert("Data restored successfully. App will reload.");
+
+        window.location.reload();
+
+    } catch (error) {
+        alert("Could not restore backup: " + error.message);
+    }
+};
+
+window.onBackupError = function(message) {
+    alert("Backup error: " + message);
+};  
     
 updatePaymentMethod();
 </script>
