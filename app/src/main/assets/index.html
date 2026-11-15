@@ -100,7 +100,6 @@ h3 {
 }
 </style>
 </head>
-
 <body>
 
 <header>
@@ -384,6 +383,15 @@ h3 {
 <div id="settingsPage" class="hidden">
     <div class="card">
         <h3>Restaurant Settings</h3>
+        <h3>Receipt Printer Settings</h3>
+
+<label>Paper Size</label>
+<select id="receiptPaperSize">
+    <option value="58mm">58 mm</option>
+    <option value="80mm">80 mm</option>
+</select>
+
+<hr>
 
         <h3>Tax Settings</h3>
 
@@ -910,6 +918,8 @@ function openSettings() {
 
     document.getElementById("serviceRate").value =
         settings.serviceRate || 0;
+    document.getElementById("receiptPaperSize").value =
+    settings.receiptPaperSize || "58mm";
 }
 
 function saveSettings() {
@@ -935,19 +945,21 @@ function saveSettings() {
         alert("Please enter a valid percentage between 0 and 100.");
         return;
     }
-
     const settings = {
-        taxEnabled:
-            document.getElementById("taxEnabled").value === "true",
+         taxEnabled:
+        document.getElementById("taxEnabled").value === "true",
 
-        taxRate: taxRate,
+         taxRate: taxRate,
 
-        serviceEnabled:
-            document.getElementById("serviceEnabled").value === "true",
+         serviceEnabled:
+        document.getElementById("serviceEnabled").value === "true",
 
-        serviceRate: serviceRate
-    };
+          serviceRate: serviceRate,
 
+         receiptPaperSize:
+        document.getElementById("receiptPaperSize").value
+     };
+    
     localStorage.setItem(
         "samuhSettings",
         JSON.stringify(settings)
@@ -1115,7 +1127,9 @@ function completePayment() {
     alert(method === "Sign"
         ? "Order saved as unpaid room charge."
         : "Payment completed successfully.");
-
+    
+    printReceipt(orderData);
+    
     currentOrderItems = [];
     currentOrderId = null;
 
@@ -1502,9 +1516,146 @@ function printReport() {
 }
 
 
+function printReceipt(order) {
+    const receiptArea = document.getElementById("receiptArea");
+    const settings = JSON.parse(
+    localStorage.getItem("samuhSettings") || "{}"
+);
+
+const paperSize = settings.receiptPaperSize || "58mm";
+
+    const money = value =>
+        "Rp" + (Number(value) || 0).toLocaleString("id-ID");
+
+    receiptArea.innerHTML = `
+        <style>
+            #receiptArea {
+                display: block !important;
+                font-family: Arial, sans-serif;
+                font-size: 11px;
+                color: #000;
+                background: #fff;
+            }
+
+           .receipt-copy {
+               width: 100%;
+               padding: 5px; 
+               box-sizing: border-box;
+               page-break-after: always;
+           }
+
+           .receipt-copy:last-child {
+               page-break-after: auto;
+            }
+
+            .receipt-center {
+                text-align: center;
+            }
+
+            .receipt-line {
+                border-top: 1px dashed #000;
+                margin: 7px 0;
+            }
+
+            .receipt-row {
+                display: flex;
+                justify-content: space-between;
+                gap: 5px;
+                margin: 4px 0;
+            }
+
+            @media print {
+                body * {
+                    visibility: hidden;
+                }
+
+                #receiptArea,
+                #receiptArea * {
+                    visibility: visible;
+                }
+
+                #receiptArea {
+                    display: block !important;
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                }
+
+                @page {
+                    size: ${paperSize} auto;
+                    margin: 3mm;
+                }
+            }
+        </style>
+
+        ${["CUSTOMER COPY", "RESTAURANT COPY"].map(copy => `
+            <div class="receipt-copy">
+                <div class="receipt-center">
+                    <h3>SAMUH RESTAURANT</h3>
+                    <b>${copy}</b>
+                </div>
+
+                <div class="receipt-line"></div>
+
+                Room Number: ${order.roomNumber}<br>
+                Guest Name: ${order.guestName}<br>
+                Staff Name: ${order.staffName}<br>
+                Date: ${new Date(order.date).toLocaleString("en-GB")}<br>
+
+                <div class="receipt-line"></div>
+
+                ${(order.items || []).map(item => `
+                    <div>${item.name}</div>
+                    <div class="receipt-row">
+                        <span>${item.quantity} x ${money(item.price)}</span>
+                        <span>${money(item.total)}</span>
+                    </div>
+                `).join("")}
+
+                <div class="receipt-line"></div>
+
+                <div class="receipt-row">
+                    <span>Subtotal</span>
+                    <span>${money(order.subtotal)}</span>
+                </div>
+
+                <div class="receipt-row">
+                    <span>Tax</span>
+                    <span>${money(order.tax)}</span>
+                </div>
+
+                <div class="receipt-row">
+                    <span>Service Charge</span>
+                    <span>${money(order.serviceCharge)}</span>
+                </div>
+
+                <div class="receipt-line"></div>
+
+                <div class="receipt-row">
+                    <b>GRAND TOTAL</b>
+                    <b>${money(order.grandTotal)}</b>
+                </div>
+
+                Payment Method: ${order.paymentMethod}
+
+                <div class="receipt-line"></div>
+
+                <div class="receipt-center">Thank You</div>
+            </div>
+        `).join("")}
+    `;
+
+    if (typeof Android !== "undefined" && Android.printReceipt) {
+        Android.printReceipt();
+    } else {
+        alert("Android printing service is not available.");
+    }
+}
+
     
 updatePaymentMethod();
 </script>
-
+<div id="receiptArea" style="display:none;"></div>
 </body>
 </html>
