@@ -1551,12 +1551,11 @@ const paperSize = settings.receiptPaperSize || "58mm";
     receiptArea.innerHTML = `
         <style>
             #receiptArea {
-                display: block !important;
-                font-family: Arial, sans-serif;
-                font-size: 11px;
-                color: #000;
-                background: #fff;
-            }
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    color: #000;
+    background: #fff;
+}
 
            .receipt-copy {
                width: 100%;
@@ -1586,28 +1585,11 @@ const paperSize = settings.receiptPaperSize || "58mm";
             }
 
             @media print {
-                body * {
-                    visibility: hidden;
-                }
-
-                #receiptArea,
-                #receiptArea * {
-                    visibility: visible;
-                }
-
-                #receiptArea {
-                    display: block !important;
-                    position: absolute;
-                    left: 0;
-                    top: 0;
-                    width: 100%;
-                }
-
-                @page {
-                    size: ${paperSize} auto;
-                    margin: 3mm;
-                }
-            }
+    @page {
+        size: ${paperSize} auto;
+        margin: 3mm;
+    }
+}
         </style>
 
         ${["CUSTOMER COPY", "RESTAURANT COPY"].map(copy => `
