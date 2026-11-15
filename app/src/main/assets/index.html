@@ -6,6 +6,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Samuh Restaurant POS</title>
 
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    #reportsPage,
+    #reportsPage * {
+        visibility: visible;
+    }
+
+    #reportsPage {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    #reportsPage button {
+        display: none !important;
+    }
+}
+
 <style>
 * {
     box-sizing: border-box;
@@ -1225,6 +1248,26 @@ function displayReports() {
         "Grand Total: Rp" + grandTotal.toLocaleString("id-ID");
 }
 
+
+function printReport() {
+    const startDate =
+        document.getElementById("reportStartDate").value;
+
+    const endDate =
+        document.getElementById("reportEndDate").value;
+
+    if (!startDate || !endDate) {
+        alert("Please select report dates first.");
+        return;
+    }
+
+    if (typeof Android !== "undefined" &&
+        Android.printReport) {
+        Android.printReport();
+    } else {
+        alert("Android printing service is not available.");
+    }
+}
 
 
     
