@@ -6,41 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Samuh Restaurant POS</title>
 
-@media print {
-    body * {
-        visibility: hidden;
-    }
-
-    body[data-print-mode="report"] #reportsPage,
-    body[data-print-mode="report"] #reportsPage * {
-        visibility: visible;
-    }
-
-    body[data-print-mode="receipt"] #receiptArea,
-    body[data-print-mode="receipt"] #receiptArea * {
-        visibility: visible;
-    }
-
-    body[data-print-mode="report"] #reportsPage {
-        display: block !important;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-    }
-
-    body[data-print-mode="receipt"] #receiptArea {
-        display: block !important;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-    }
-
-    #reportsPage button {
-        display: none !important;
-    }
-}
 
 <style>
 * {
@@ -108,10 +73,48 @@ input, select {
     display: none;
 }
 
+
 h3 {
     margin-top: 0;
 }
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    body[data-print-mode="report"] #reportsPage,
+    body[data-print-mode="report"] #reportsPage * {
+        visibility: visible;
+    }
+
+    body[data-print-mode="receipt"] #receiptArea,
+    body[data-print-mode="receipt"] #receiptArea * {
+        visibility: visible;
+    }
+
+    body[data-print-mode="report"] #reportsPage {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    body[data-print-mode="receipt"] #receiptArea {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    #reportsPage button {
+        display: none !important;
+    }
+}
 </style>
+
 </head>
 <body>
 
@@ -444,7 +447,21 @@ h3 {
         </button>
     </div>
 </div>
+    
+<div id="heldOrdersPage" class="hidden">
+    <div class="card">
+        <h3>Held Orders</h3>
 
+        <div id="heldOrdersList">
+            No held orders yet.
+        </div>
+
+        <button onclick="closeHeldOrders()"
+                style="background:#64748b">
+            Back to Dashboard
+        </button>
+    </div>
+</div>
 <script>
  
 function openMenuManagement() {
@@ -1222,20 +1239,7 @@ function addOrderItem() {
 }
     
   
-<div id="heldOrdersPage" class="hidden">
-    <div class="card">
-        <h3>Held Orders</h3>
 
-        <div id="heldOrdersList">
-            No held orders yet.
-        </div>
-
-        <button onclick="closeHeldOrders()"
-                style="background:#64748b">
-            Back to Dashboard
-        </button>
-    </div>
-</div>
 
 function openHeldOrders() {
     document.getElementById("dashboard").classList.add("hidden");
