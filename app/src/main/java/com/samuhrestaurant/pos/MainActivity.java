@@ -48,6 +48,26 @@ public class MainActivity extends Activity {
                         );
                     });
                 }
+              @JavascriptInterface
+public void printReceipt() {
+    runOnUiThread(() -> {
+        PrintManager printManager =
+            (PrintManager) getSystemService(
+                Context.PRINT_SERVICE
+            );
+
+        PrintDocumentAdapter adapter =
+            webView.createPrintDocumentAdapter(
+                "Samuh-Restaurant-Receipt"
+            );
+
+        printManager.print(
+            "Samuh-Restaurant-Receipt",
+            adapter,
+            null
+        );
+    });
+}  
             },
             "Android"
         );
