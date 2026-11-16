@@ -1216,8 +1216,6 @@ function completePayment() {
     displayOrderItems();
     displayMenuItems();
 
-    document.getElementById("paymentPage").classList.add("hidden");
-    document.getElementById("dashboard").classList.remove("hidden");
 }
 
 
@@ -1698,14 +1696,15 @@ const paperSize = settings.receiptPaperSize || "58mm";
             </div>
         `).join("")}
     `;
-    
     document.body.dataset.printMode = "receipt";
+
+document.getElementById("receiptArea").style.display = "block";
+
+document.getElementById("dashboard").classList.add("hidden");
+document.getElementById("paymentPage").classList.add("hidden");
+
+document.getElementById("receiptPreviewPage").style.display = "block";
     
-    if (typeof Android !== "undefined" && Android.printReceipt) {
-        Android.printReceipt();
-    } else {
-        alert("Android printing service is not available.");
-    }
 }
 function changePin() {
     if (window.currentUserRole !== "Owner") {
@@ -1870,8 +1869,23 @@ window.onBackupError = function(message) {
     alert("Backup error: " + message);
 };  
     
+function backToDashboard() {
+    document.getElementById("receiptPreviewPage").style.display = "none";
+    document.getElementById("receiptArea").style.display = "none";
+
+    document.getElementById("dashboard").classList.remove("hidden");
+}  
+    
 updatePaymentMethod();
 </script>
 <div id="receiptArea" style="display:none;"></div>
+
+<div id="receiptPreviewPage" style="display:none;">
+    <h2>Receipt Preview</h2>
+
+    <button onclick="backToDashboard()">
+        Back to Dashboard
+    </button>
+</div>
 </body>
 </html>
