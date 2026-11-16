@@ -429,9 +429,37 @@ h3 {
     <option value="80mm">80 mm</option>
 </select>
 
+
 <hr>
 
-        <h3>Tax Settings</h3>
+<h3>Bluetooth Printer</h3>
+
+<label>Paired Printer</label>
+<select id="pairedPrinterList">
+    <option value="">Select Bluetooth Printer</option>
+</select>
+
+<button onclick="loadPairedPrinters()">
+    Refresh Printer List
+</button>
+
+<button onclick="connectSelectedPrinter()">
+    Connect Printer
+</button>
+
+<button onclick="disconnectBluetoothPrinter()"
+        style="background:#64748b">
+    Disconnect Printer
+</button>
+
+<p id="printerStatus">
+    Printer Status: Not Connected
+</p>
+
+<hr>
+
+<h3>Tax Settings</h3>
+
 
         <label>Tax Status</label>
         <select id="taxEnabled">
@@ -1581,6 +1609,7 @@ document.getElementById("reportTotalService").textContent =
     totalService.toLocaleString("id-ID");
 }
 
+
 function printReport() {
     const startDate =
         document.getElementById("reportStartDate").value;
@@ -1600,13 +1629,37 @@ function printReport() {
 
     document.body.dataset.printMode = "report";
 
-    if (typeof Android !== "undefined" &&
-        Android.printReport) {
-        Android.printReport();
+    const printerStatus =
+        document.getElementById("printerStatus");
+
+    if (
+        typeof Android !== "undefined" &&
+        Android.printBluetooth &&
+        printerStatus &&
+        printerStatus.textContent.includes(
+            "Printer Status: Printer berhasil terhubung"
+        )
+    ) {
+        const reportArea =
+            document.getElementById("reportsPage");
+
+        Android.printBluetooth(reportArea.innerText);
+
     } else {
-        alert("Android printing service is not available.");
+        const usePDF = confirm(
+            "Bluetooth printer is not connected.\n\nOK = Android Print / Save PDF\nCancel = Return"
+        );
+
+        if (
+            usePDF &&
+            typeof Android !== "undefined" &&
+            Android.printReport
+        ) {
+            Android.printReport();
+        }
     }
 }
+
 
 
 
@@ -1914,17 +1967,109 @@ window.onBackupError = function(message) {
     document.getElementById("orderPage").classList.add("hidden");
     document.getElementById("paymentPage").classList.add("hidden");
 }
-  function printReceiptAgain() {
+  
+function printReceiptAgain() {
     document.body.dataset.printMode = "receipt";
 
-    document.getElementById("receiptArea").style.display = "block";
+    const receiptArea =
+        document.getElementById("receiptArea");
 
-    if (typeof Android !== "undefined" && Android.printReceipt) {
-        Android.printReceipt();
+    receiptArea.style.display = "block";
+
+    if (typeof Android !== "undefined" &&
+        Android.printBluetooth &&
+        document.getElementById("printerStatus")
+            .textContent.includes("Printer Status: Printer berhasil terhubung")) {
+
+        Android.printBluetooth(receiptArea.innerText);
+
     } else {
-        alert("Android printing service is not available.");
+
+        const usePDF = confirm(
+            "Bluetooth printer is not connected.\n\nOK = Save PDF / Android Print\nCancel = Return to Receipt Preview"
+        );
+if (
+    usePDF &&
+    typeof Android !== "undefined" &&
+    Android.printReceipt
+) {
+    Android.printReceipt();
+        
     }
-}  
+}
+
+ 
+function loadPairedPrinters() {
+    const select = document.getElementById("pairedPrinterList");
+
+    select.innerHTML =
+        '<option value="">Select Bluetooth Printer</option>';
+
+    if (typeof Android === "undefined" ||
+        !Android.getPairedPrinters) {
+        alert("Bluetooth service unavailable.");
+        return;
+    }
+
+    try {
+        const printers = JSON.parse(
+            Android.getPairedPrinters()
+        );
+
+        printers.forEach(printer => {
+            const option = document.createElement("option");
+
+            option.value = printer.address;
+            option.textContent =
+                printer.name + " (" + printer.address + ")";
+
+            select.appendChild(option);
+        });
+
+        if (printers.length === 0) {
+            alert("No paired printer found. Pair your printer in Android Bluetooth Settings first.");
+        }
+
+    } catch (error) {
+        alert("Could not load printer list.");
+    }
+}
+
+function connectSelectedPrinter() {
+    const address =
+        document.getElementById("pairedPrinterList").value;
+
+    if (!address) {
+        alert("Please select a printer first.");
+        return;
+    }
+
+    document.getElementById("printerStatus").textContent =
+        "Printer Status: Connecting...";
+
+    Android.connectPrinter(address);
+}
+
+function disconnectBluetoothPrinter() {
+    if (typeof Android !== "undefined" &&
+        Android.disconnectPrinter) {
+
+        Android.disconnectPrinter();
+
+        document.getElementById("printerStatus").textContent =
+            "Printer Status: Disconnected";
+    }
+}
+
+window.onPrinterConnected = function(success, message) {
+    document.getElementById("printerStatus").textContent =
+        "Printer Status: " + message;
+};
+
+window.onBluetoothPrint = function(success, message) {
+    alert(message);
+};
+   
  
 updatePaymentMethod();
 </script>
