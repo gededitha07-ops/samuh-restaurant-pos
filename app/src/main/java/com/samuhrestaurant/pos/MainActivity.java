@@ -467,6 +467,13 @@ public void onRequestPermissionsResult(
                 "Izin Bluetooth berhasil diberikan.",
                 Toast.LENGTH_SHORT
             ).show();
+            if (bluetoothAdapter != null) {
+    Toast.makeText(
+        this,
+        "Silakan refresh daftar printer.",
+        Toast.LENGTH_LONG
+    ).show();
+}
 
         } else {
 
