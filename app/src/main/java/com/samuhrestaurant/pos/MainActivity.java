@@ -1,5 +1,6 @@
 package com.samuhrestaurant.pos;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import android.app.Activity;
 import android.os.Bundle;
@@ -17,13 +18,35 @@ import java.io.OutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import android.widget.Toast;
+import java.util.Set;
+import java.util.UUID;
 
 public class MainActivity extends Activity {
 
-    private WebView webView;
-    private static final int REQUEST_BACKUP = 1001;
-    private static final int REQUEST_RESTORE = 1002;
-    private String pendingBackupJson;
+    
+private WebView webView;
+
+private static final int REQUEST_BACKUP = 1001;
+private static final int REQUEST_RESTORE = 1002;
+private static final int REQUEST_BLUETOOTH_PERMISSION = 1003;
+
+private String pendingBackupJson;
+
+private BluetoothAdapter bluetoothAdapter;
+private BluetoothSocket bluetoothSocket;
+private BluetoothDevice bluetoothDevice;
+
+private final UUID printerUUID = UUID.fromString(
+    "00001101-0000-1000-8000-00805F9B34FB"
+);
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,9 +136,48 @@ public void restoreData() {
         );
 
         setContentView(webView);
+        siapkanBluetooth();
 
         webView.loadUrl("file:///android_asset/index.html");
     }
+    
+private void siapkanBluetooth() {
+
+    bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+    if (bluetoothAdapter == null) {
+        Toast.makeText(
+            this,
+            "Tablet tidak mendukung Bluetooth.",
+            Toast.LENGTH_LONG
+        ).show();
+        return;
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+
+        if (checkSelfPermission(
+            Manifest.permission.BLUETOOTH_CONNECT
+        ) != PackageManager.PERMISSION_GRANTED) {
+
+            requestPermissions(
+                new String[]{
+                    Manifest.permission.BLUETOOTH_CONNECT
+                },
+                REQUEST_BLUETOOTH_PERMISSION
+            );
+
+            return;
+        }
+    }
+
+    Toast.makeText(
+        this,
+        "Bluetooth siap digunakan.",
+        Toast.LENGTH_SHORT
+    ).show();
+}
+
 @Override
 protected void onActivityResult(
     int requestCode,
@@ -204,6 +266,41 @@ protected void onActivityResult(
         );
     }
 }
+    
+@Override
+public void onRequestPermissionsResult(
+    int requestCode,
+    String[] permissions,
+    int[] grantResults
+) {
+    super.onRequestPermissionsResult(
+        requestCode,
+        permissions,
+        grantResults
+    );
+
+    if (requestCode == REQUEST_BLUETOOTH_PERMISSION) {
+
+        if (grantResults.length > 0 &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+            Toast.makeText(
+                this,
+                "Izin Bluetooth berhasil diberikan.",
+                Toast.LENGTH_SHORT
+            ).show();
+
+        } else {
+
+            Toast.makeText(
+                this,
+                "Izin Bluetooth belum diberikan.",
+                Toast.LENGTH_LONG
+            ).show();
+        }
+    }
+}
+
     @Override
     public void onBackPressed() {
         if (webView != null && webView.canGoBack()) {
