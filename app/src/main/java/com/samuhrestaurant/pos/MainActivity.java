@@ -175,9 +175,15 @@ public void connectPrinter(String address) {
             BluetoothDevice device =
                 bluetoothAdapter.getRemoteDevice(address);
 
-            newSocket = device.createRfcommSocketToServiceRecord(
-                printerUUID
-            );
+            if (bluetoothSocket != null) {
+                try {
+                    bluetoothSocket.close();
+                } catch (IOException ignored) {}
+                bluetoothSocket = null;
+            }
+
+            newSocket =
+                device.createRfcommSocketToServiceRecord(printerUUID);
 
             newSocket.connect();
 
@@ -199,6 +205,9 @@ public void connectPrinter(String address) {
                 }
             } catch (IOException ignored) {}
 
+            bluetoothSocket = null;
+            bluetoothDevice = null;
+
             webView.post(() ->
                 webView.evaluateJavascript(
                     "window.onPrinterConnected && window.onPrinterConnected(false, 'Gagal menghubungkan printer')",
@@ -209,11 +218,14 @@ public void connectPrinter(String address) {
     }).start();
 }
 
+
+
 @JavascriptInterface
 public void printBluetooth(String content) {
 
-    if (bluetoothSocket == null ||
-        !bluetoothSocket.isConnected()) {
+    BluetoothSocket socket = bluetoothSocket;
+
+    if (socket == null || !socket.isConnected()) {
 
         webView.post(() ->
             webView.evaluateJavascript(
@@ -227,25 +239,24 @@ public void printBluetooth(String content) {
     new Thread(() -> {
 
         try {
-            OutputStream output =
-                bluetoothSocket.getOutputStream();
+            OutputStream output = socket.getOutputStream();
 
             // Inisialisasi printer ESC/POS
             output.write(new byte[]{0x1B, 0x40});
 
-            // Kirim isi struk
+            // Kirim isi struk atau laporan
             output.write(
                 content.getBytes(StandardCharsets.UTF_8)
             );
 
-            // Beri jarak di bagian bawah struk
+            // Jarak bawah kertas
             output.write(new byte[]{0x0A, 0x0A, 0x0A});
 
             output.flush();
 
             webView.post(() ->
                 webView.evaluateJavascript(
-                    "window.onBluetoothPrint && window.onBluetoothPrint(true, 'Struk berhasil dikirim ke printer')",
+                    "window.onBluetoothPrint && window.onBluetoothPrint(true, 'Data berhasil dikirim ke printer')",
                     null
                 )
             );
@@ -262,6 +273,7 @@ public void printBluetooth(String content) {
 
     }).start();
 }
+
  
 @JavascriptInterface
 public void disconnectPrinter() {
@@ -318,7 +330,7 @@ public void restoreData() {
 
         webView.loadUrl("file:///android_asset/index.html");
     }
-    
+ 
 private void siapkanBluetooth() {
 
     bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -355,6 +367,8 @@ private void siapkanBluetooth() {
         Toast.LENGTH_SHORT
     ).show();
 }
+   
+
 
 @Override
 protected void onActivityResult(
@@ -467,13 +481,11 @@ public void onRequestPermissionsResult(
                 "Izin Bluetooth berhasil diberikan.",
                 Toast.LENGTH_SHORT
             ).show();
-            if (bluetoothAdapter != null) {
-    Toast.makeText(
-        this,
-        "Silakan refresh daftar printer.",
-        Toast.LENGTH_LONG
-    ).show();
-}
+
+            webView.evaluateJavascript(
+                "if (typeof loadPairedPrinters === 'function') { loadPairedPrinters(); }",
+                null
+            );
 
         } else {
 
@@ -486,12 +498,4 @@ public void onRequestPermissionsResult(
     }
 }
 
-    @Override
-    public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
-    }
-}
+
