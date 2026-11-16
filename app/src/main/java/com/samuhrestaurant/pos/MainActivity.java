@@ -104,8 +104,186 @@ private final UUID printerUUID = UUID.fromString(
                         );
                     });
                 }
-               @JavascriptInterface
-public void backupData(String json) {
+
+@JavascriptInterface
+public String getPairedPrinters() {
+
+    JSONArray printers = new JSONArray();
+
+    if (bluetoothAdapter == null) {
+        return printers.toString();
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+        checkSelfPermission(
+            Manifest.permission.BLUETOOTH_CONNECT
+        ) != PackageManager.PERMISSION_GRANTED) {
+        return printers.toString();
+    }
+
+    try {
+        Set<BluetoothDevice> devices =
+            bluetoothAdapter.getBondedDevices();
+
+        for (BluetoothDevice device : devices) {
+            JSONObject printer = new JSONObject();
+
+            printer.put("name", device.getName());
+            printer.put("address", device.getAddress());
+
+            printers.put(printer);
+        }
+
+    } catch (Exception e) {
+        return printers.toString();
+    }
+
+    return printers.toString();
+}
+
+@JavascriptInterface
+public void connectPrinter(String address) {
+
+    if (bluetoothAdapter == null) {
+        webView.post(() ->
+            webView.evaluateJavascript(
+                "window.onPrinterConnected && window.onPrinterConnected(false, 'Bluetooth tidak tersedia')",
+                null
+            )
+        );
+        return;
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+        checkSelfPermission(
+            Manifest.permission.BLUETOOTH_CONNECT
+        ) != PackageManager.PERMISSION_GRANTED) {
+
+        webView.post(() ->
+            webView.evaluateJavascript(
+                "window.onPrinterConnected && window.onPrinterConnected(false, 'Izin Bluetooth belum diberikan')",
+                null
+            )
+        );
+        return;
+    }
+
+    new Thread(() -> {
+        BluetoothSocket newSocket = null;
+
+        try {
+            BluetoothDevice device =
+                bluetoothAdapter.getRemoteDevice(address);
+
+            newSocket = device.createRfcommSocketToServiceRecord(
+                printerUUID
+            );
+
+            newSocket.connect();
+
+            bluetoothSocket = newSocket;
+            bluetoothDevice = device;
+
+            webView.post(() ->
+                webView.evaluateJavascript(
+                    "window.onPrinterConnected && window.onPrinterConnected(true, 'Printer berhasil terhubung')",
+                    null
+                )
+            );
+
+        } catch (Exception e) {
+
+            try {
+                if (newSocket != null) {
+                    newSocket.close();
+                }
+            } catch (IOException ignored) {}
+
+            webView.post(() ->
+                webView.evaluateJavascript(
+                    "window.onPrinterConnected && window.onPrinterConnected(false, 'Gagal menghubungkan printer')",
+                    null
+                )
+            );
+        }
+    }).start();
+}
+
+@JavascriptInterface
+public void printBluetooth(String content) {
+
+    if (bluetoothSocket == null ||
+        !bluetoothSocket.isConnected()) {
+
+        webView.post(() ->
+            webView.evaluateJavascript(
+                "window.onBluetoothPrint && window.onBluetoothPrint(false, 'Printer belum terhubung')",
+                null
+            )
+        );
+        return;
+    }
+
+    new Thread(() -> {
+
+        try {
+            OutputStream output =
+                bluetoothSocket.getOutputStream();
+
+            // Inisialisasi printer ESC/POS
+            output.write(new byte[]{0x1B, 0x40});
+
+            // Kirim isi struk
+            output.write(
+                content.getBytes(StandardCharsets.UTF_8)
+            );
+
+            // Beri jarak di bagian bawah struk
+            output.write(new byte[]{0x0A, 0x0A, 0x0A});
+
+            output.flush();
+
+            webView.post(() ->
+                webView.evaluateJavascript(
+                    "window.onBluetoothPrint && window.onBluetoothPrint(true, 'Struk berhasil dikirim ke printer')",
+                    null
+                )
+            );
+
+        } catch (Exception e) {
+
+            webView.post(() ->
+                webView.evaluateJavascript(
+                    "window.onBluetoothPrint && window.onBluetoothPrint(false, 'Gagal mencetak melalui Bluetooth')",
+                    null
+                )
+            );
+        }
+
+    }).start();
+}
+ 
+@JavascriptInterface
+public void disconnectPrinter() {
+
+    try {
+        if (bluetoothSocket != null) {
+            bluetoothSocket.close();
+            bluetoothSocket = null;
+        }
+
+        bluetoothDevice = null;
+
+    } catch (IOException e) {
+        bluetoothSocket = null;
+        bluetoothDevice = null;
+    }
+}
+               
+
+                
+   @JavascriptInterface
+   public void backupData(String json) {
     runOnUiThread(() -> {
         pendingBackupJson = json;
 
