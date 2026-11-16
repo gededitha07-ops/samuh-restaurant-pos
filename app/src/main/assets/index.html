@@ -73,6 +73,27 @@ input, select {
     display: none;
 }
 
+#receiptPreviewPage {
+    padding: 16px;
+    background: #f1f5f9;
+}
+
+#receiptPreviewPage .card {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+#receiptArea {
+    background: white;
+    color: black;
+    padding: 12px;
+    border: 1px solid #ddd;
+    overflow-x: auto;
+}
+
+#receiptPreviewPage button {
+    margin-top: 12px;
+}
 
 h3 {
     margin-top: 0;
@@ -1560,7 +1581,6 @@ document.getElementById("reportTotalService").textContent =
     totalService.toLocaleString("id-ID");
 }
 
-
 function printReport() {
     const startDate =
         document.getElementById("reportStartDate").value;
@@ -1570,6 +1590,11 @@ function printReport() {
 
     if (!startDate || !endDate) {
         alert("Please select report dates first.");
+        return;
+    }
+
+    if (startDate > endDate) {
+        alert("Start date cannot be after end date.");
         return;
     }
 
@@ -1648,7 +1673,7 @@ const paperSize = settings.receiptPaperSize || "58mm";
                 </div>
 
                 <div class="receipt-line"></div>
-
+                Receipt No: ${order.id}<br>
                 Room Number: ${order.roomNumber}<br>
                 Guest Name: ${order.guestName}<br>
                 Staff Name: ${order.staffName}<br>
@@ -1688,10 +1713,22 @@ const paperSize = settings.receiptPaperSize || "58mm";
                     <b>${money(order.grandTotal)}</b>
                 </div>
 
-                Payment Method: ${order.paymentMethod}
+                Payment Method: ${order.paymentMethod}<br>
+Payment Status: ${order.status}<br>
 
-                <div class="receipt-line"></div>
+${order.paymentMethod === "Cash" ? `
+    <div class="receipt-row">
+        <span>Amount Received</span>
+        <span>${money(order.amountReceived)}</span>
+    </div>
 
+    <div class="receipt-row">
+        <span>Change</span>
+        <span>${money(order.change)}</span>
+    </div>
+` : ""}
+
+<div class="receipt-line"></div>
                 <div class="receipt-center">Thank You</div>
             </div>
         `).join("")}
@@ -1869,23 +1906,43 @@ window.onBackupError = function(message) {
     alert("Backup error: " + message);
 };  
     
-function backToDashboard() {
+ function backToDashboard() {
     document.getElementById("receiptPreviewPage").style.display = "none";
     document.getElementById("receiptArea").style.display = "none";
 
     document.getElementById("dashboard").classList.remove("hidden");
+    document.getElementById("orderPage").classList.add("hidden");
+    document.getElementById("paymentPage").classList.add("hidden");
+}
+  function printReceiptAgain() {
+    document.body.dataset.printMode = "receipt";
+
+    document.getElementById("receiptArea").style.display = "block";
+
+    if (typeof Android !== "undefined" && Android.printReceipt) {
+        Android.printReceipt();
+    } else {
+        alert("Android printing service is not available.");
+    }
 }  
-    
+ 
 updatePaymentMethod();
 </script>
-<div id="receiptArea" style="display:none;"></div>
-
 <div id="receiptPreviewPage" style="display:none;">
-    <h2>Receipt Preview</h2>
 
-    <button onclick="backToDashboard()">
-        Back to Dashboard
-    </button>
+    <div class="card">
+        <h2>Receipt Preview</h2>
+
+        <div id="receiptArea" style="display:block;"></div>
+        <button onclick="printReceiptAgain()">
+    Print Receipt
+</button>
+
+        <button onclick="backToDashboard()">
+            Back to Dashboard
+        </button>
+    </div>
+
 </div>
 </body>
 </html>
