@@ -496,6 +496,14 @@ public void onRequestPermissionsResult(
             ).show();
         }
     }
+    @Override
+public void onBackPressed() {
+    if (webView != null && webView.canGoBack()) {
+        webView.goBack();
+    } else {
+        super.onBackPressed();
+    }
+}
 }
 
 
