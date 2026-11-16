@@ -1610,6 +1610,7 @@ document.getElementById("reportTotalService").textContent =
 }
 
 
+
 function printReport() {
     const startDate =
         document.getElementById("reportStartDate").value;
@@ -1629,16 +1630,10 @@ function printReport() {
 
     document.body.dataset.printMode = "report";
 
-    const printerStatus =
-        document.getElementById("printerStatus");
-
     if (
         typeof Android !== "undefined" &&
         Android.printBluetooth &&
-        printerStatus &&
-        printerStatus.textContent.includes(
-            "Printer Status: Printer berhasil terhubung"
-        )
+        window.bluetoothPrinterConnected === true
     ) {
         const reportArea =
             document.getElementById("reportsPage");
@@ -1659,6 +1654,7 @@ function printReport() {
         }
     }
 }
+
 
 
 
@@ -1968,6 +1964,7 @@ window.onBackupError = function(message) {
     document.getElementById("paymentPage").classList.add("hidden");
 }
   
+
 function printReceiptAgain() {
     document.body.dataset.printMode = "receipt";
 
@@ -1976,11 +1973,11 @@ function printReceiptAgain() {
 
     receiptArea.style.display = "block";
 
-    if (typeof Android !== "undefined" &&
+    if (
+        typeof Android !== "undefined" &&
         Android.printBluetooth &&
-        document.getElementById("printerStatus")
-            .textContent.includes("Printer Status: Printer berhasil terhubung")) {
-
+        window.bluetoothPrinterConnected === true
+    ) {
         Android.printBluetooth(receiptArea.innerText);
 
     } else {
@@ -1988,15 +1985,17 @@ function printReceiptAgain() {
         const usePDF = confirm(
             "Bluetooth printer is not connected.\n\nOK = Save PDF / Android Print\nCancel = Return to Receipt Preview"
         );
-if (
-    usePDF &&
-    typeof Android !== "undefined" &&
-    Android.printReceipt
-) {
-    Android.printReceipt();
-        
+
+        if (
+            usePDF &&
+            typeof Android !== "undefined" &&
+            Android.printReceipt
+        ) {
+            Android.printReceipt();
+        }
     }
 }
+
 
  
 function loadPairedPrinters() {
@@ -2049,22 +2048,28 @@ function connectSelectedPrinter() {
 
     Android.connectPrinter(address);
 }
-
 function disconnectBluetoothPrinter() {
     if (typeof Android !== "undefined" &&
         Android.disconnectPrinter) {
 
         Android.disconnectPrinter();
 
+        window.bluetoothPrinterConnected = false;
+
         document.getElementById("printerStatus").textContent =
             "Printer Status: Disconnected";
     }
 }
 
+window.bluetoothPrinterConnected = false;
+
 window.onPrinterConnected = function(success, message) {
+    window.bluetoothPrinterConnected = success;
+
     document.getElementById("printerStatus").textContent =
         "Printer Status: " + message;
 };
+
 
 window.onBluetoothPrint = function(success, message) {
     alert(message);
