@@ -459,6 +459,7 @@ protected void onActivityResult(
     }
 }
     
+
 @Override
 public void onRequestPermissionsResult(
     int requestCode,
@@ -496,7 +497,9 @@ public void onRequestPermissionsResult(
             ).show();
         }
     }
-    @Override
+}
+
+@Override
 public void onBackPressed() {
     if (webView != null && webView.canGoBack()) {
         webView.goBack();
